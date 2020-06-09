@@ -4,6 +4,9 @@
 #include <windows.h>
 #include <dbghelp.h>
 
+#pragma comment(lib, "Version.lib")
+#pragma comment(lib, "Rpcrt4.lib")
+
 // Define SAL macros to be empty if some old Visual Studio used
 #ifndef __reserved
 #define __reserved
