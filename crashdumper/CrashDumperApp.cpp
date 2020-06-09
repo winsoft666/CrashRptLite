@@ -15,7 +15,6 @@ CrashSenderApp::CrashSenderApp() {
 CrashSenderApp theApp;
 
 BOOL CrashSenderApp::InitInstance() {
-  system("pause");
   INITCOMMONCONTROLSEX InitCtrls;
   InitCtrls.dwSize = sizeof(InitCtrls);
   InitCtrls.dwICC = ICC_WIN95_CLASSES;
@@ -24,10 +23,6 @@ BOOL CrashSenderApp::InitInstance() {
   CWinApp::InitInstance();
 
   AfxEnableControlContainer();
-
-  CShellManager* pShellManager = new CShellManager;
-
-  CMFCVisualManager::SetDefaultManager(RUNTIME_CLASS(CMFCVisualManagerWindows));
 
   int nRet = 0;
 
@@ -58,14 +53,6 @@ BOOL CrashSenderApp::InitInstance() {
   nRet = pSender->GetStatus();
   
   delete pSender;
-
-  if (pShellManager != nullptr) {
-    delete pShellManager;
-  }
-
-#if !defined(_AFXDLL) && !defined(_AFX_NO_MFC_CONTROLS_IN_DIALOGS)
-  ControlBarCleanUp();
-#endif
 
   return FALSE;
 }

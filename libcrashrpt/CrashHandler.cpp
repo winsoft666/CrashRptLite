@@ -136,8 +136,6 @@ int CCrashHandler::Init(LPCTSTR lpcszAppName,
   if (m_nRestartTimeout <= 0)
     m_nRestartTimeout = 60;  // use default 60 sec timeout
 
-  
-
   // Save crash report delivery priorities
   if (puPriorities != NULL)
     memcpy(&m_uPriorities, puPriorities, 3 * sizeof(UINT));
@@ -154,14 +152,8 @@ int CCrashHandler::Init(LPCTSTR lpcszAppName,
     m_sPathToCrashDumper = CString(lpcszCrashSenderPath);
   }
 
-  // Get CrashSender EXE name
   CString sCrashDumperName;
-
-#ifdef _DEBUG
-  sCrashDumperName.Format(_T("CrashDumperd.exe"));
-#else
-  sCrashDumperName.Format(_T("CrashDumper.exe"));
-#endif  //_DEBUG
+  sCrashDumperName.Format(_T("crashdumper.exe"));
 
   // Check that CrashSender.exe file exists
   if (m_sPathToCrashDumper.Right(1) != '\\')

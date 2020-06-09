@@ -4,7 +4,9 @@ project(libcrashrpt)
 aux_source_directory(. source_files )
 file(GLOB header_files *.h ./include/*.h )
 
-list(APPEND source_files ./libcrashrpt.def)
+if(NOT CRASHRPT_BUILD_STATIC_LIBS)
+  list(APPEND source_files ./libcrashrpt.def)
+endif(CRASHRPT_BUILD_STATIC_LIBS)
 
 # Enable usage of precompiled header
 set(srcs_using_precomp ${source_files})
@@ -56,4 +58,4 @@ install(TARGETS libcrashrpt
 	LIBRARY DESTINATION lib
 	ARCHIVE DESTINATION lib)
     
-install(FILES ./include/CrashRpt.h 			DESTINATION include/crashrpt)
+install(FILES ./include/CrashRpt.h 			DESTINATION include/crashreport)
