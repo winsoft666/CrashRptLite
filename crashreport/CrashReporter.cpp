@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "CrashDumper.h"
+#include "CrashReporter.h"
 #include "CrashRpt.h"
 #include "Utility.h"
 #include "zip.h"
@@ -7,11 +7,10 @@
 #include "strconv.h"
 #include "ScreenCap.h"
 #include <sys/stat.h>
-#include "dbghelp.h"
 
-CErrorReportSender* CErrorReportSender::m_pInstance = NULL;
+CrashReporter* CrashReporter::m_pInstance = NULL;
 
-CErrorReportSender::CErrorReportSender() {
+CrashReporter::CrashReporter() {
   m_nStatus = 0;
   m_nCurReport = 0;
   m_SendAttempt = 0;
@@ -20,18 +19,18 @@ CErrorReportSender::CErrorReportSender() {
   m_bErrors = FALSE;
 }
 
-CErrorReportSender::~CErrorReportSender() {
+CrashReporter::~CrashReporter() {
   Finalize();
 }
 
-CErrorReportSender* CErrorReportSender::GetInstance() {
+CrashReporter* CrashReporter::GetInstance() {
   // Return singleton object
   if (m_pInstance == NULL)
-    m_pInstance = new CErrorReportSender();
+    m_pInstance = new CrashReporter();
   return m_pInstance;
 }
 
-BOOL CErrorReportSender::Init(LPCTSTR szFileMappingName) {
+BOOL CrashReporter::Init(LPCTSTR szFileMappingName) {
   m_sErrorMsg = _T("Unspecified error.");
 
   // Read crash information from the file mapping object.
@@ -44,7 +43,7 @@ BOOL CErrorReportSender::Init(LPCTSTR szFileMappingName) {
   // Check if another instance of CrashSender.exe is running.
   ::CreateMutex(NULL, FALSE, _T("Local\\43773530-129a-4298-88f2-20eea3e4a59b"));
   if (::GetLastError() == ERROR_ALREADY_EXISTS) {
-    m_sErrorMsg = _T("Another CrashSender.exe already tries to resend recent reports.");
+    m_sErrorMsg = _T("Another CrashReport.exe already running.");
     return FALSE;
   }
 
@@ -58,7 +57,7 @@ BOOL CErrorReportSender::Init(LPCTSTR szFileMappingName) {
   return TRUE;
 }
 
-BOOL CErrorReportSender::InitLog() {
+BOOL CrashReporter::InitLog() {
   // Check if we have already created log
   if (!m_sCrashLogFile.IsEmpty())
     return TRUE;
@@ -89,41 +88,41 @@ BOOL CErrorReportSender::InitLog() {
   return TRUE;
 }
 
-CCrashInfoReader* CErrorReportSender::GetCrashInfo() {
+CCrashInfoReader* CrashReporter::GetCrashInfo() {
   return &m_CrashInfo;
 }
 
-CString CErrorReportSender::GetErrorMsg() {
+CString CrashReporter::GetErrorMsg() {
   return m_sErrorMsg;
 }
 
-void CErrorReportSender::SetNotificationWindow(HWND hWnd) {
+void CrashReporter::SetNotificationWindow(HWND hWnd) {
   m_hWndNotify = hWnd;
 }
 
-BOOL CErrorReportSender::Run() {
+BOOL CrashReporter::Run() {
   WaitForCompletion();
 
   SetExportFlag(FALSE, _T(""));
 
   m_Action = COMPRESS_REPORT | RESTART_APP | COLLECT_CRASH_INFO;
 
-  thread_ = std::async(std::launch::async, &CErrorReportSender::DoWork, this, m_Action);
+  thread_ = std::async(std::launch::async, &CrashReporter::DoWork, this, m_Action);
 
   return TRUE;
 }
 
-int CErrorReportSender::GetStatus() {
+int CrashReporter::GetStatus() {
   // Return global error report delivery status
   return m_nStatus;
 }
 
-int CErrorReportSender::GetCurReport() {
+int CrashReporter::GetCurReport() {
   // Returns the index of error report currently being sent
   return m_nCurReport;
 }
 
-void CErrorReportSender::UnblockParentProcess() {
+void CrashReporter::UnblockParentProcess() {
   // Notify the parent process that we have finished with minidump,
   // so the parent process is able to unblock and terminate itself.
 
@@ -137,10 +136,9 @@ void CErrorReportSender::UnblockParentProcess() {
 
 // This method collects required crash report files (minidump, screenshot etc.)
 // and then sends the error report over the Internet.
-BOOL CErrorReportSender::DoWork(int Action) {
+BOOL CrashReporter::DoWork(int Action) {
   // Reset the completion event
   m_Assync.Reset();
-
   InitLog();
 
   if (Action & COLLECT_CRASH_INFO)  // Collect crash report files
@@ -218,32 +216,32 @@ BOOL CErrorReportSender::DoWork(int Action) {
 }
 
 // Returns the export flag (the flag is set if we are exporting error report as a ZIP archive)
-void CErrorReportSender::SetExportFlag(BOOL bExport, CString sExportFile) {
+void CrashReporter::SetExportFlag(BOOL bExport, CString sExportFile) {
   // This is used when we need to export error report files as a ZIP archive
   m_bExport = bExport;
   m_sExportFileName = sExportFile;
 }
 
-void CErrorReportSender::WaitForCompletion() {
+void CrashReporter::WaitForCompletion() {
   if (thread_.valid()) {
     thread_.wait();
   }
 }
 
 // Gets status of the local operation
-void CErrorReportSender::GetCurOpStatus(int& nProgressPct, std::vector<CString>& msg_log) {
+void CrashReporter::GetCurOpStatus(int& nProgressPct, std::vector<CString>& msg_log) {
   m_Assync.GetProgress(nProgressPct, msg_log);
 }
 
-void CErrorReportSender::Cancel() {
+void CrashReporter::Cancel() {
   m_Assync.Cancel();
 }
 
-void CErrorReportSender::FeedbackReady(int code) {
+void CrashReporter::FeedbackReady(int code) {
   m_Assync.FeedbackReady(code);
 }
 
-BOOL CErrorReportSender::Finalize() {
+BOOL CrashReporter::Finalize() {
   WaitForCompletion();
 
   if (m_CrashInfo.m_bStoreZIPArchives) {
@@ -257,7 +255,7 @@ BOOL CErrorReportSender::Finalize() {
 
 // This method takes the desktop screenshot (screenshot of entire virtual screen
 // or screenshot of the main window).
-BOOL CErrorReportSender::TakeDesktopScreenshot() {
+BOOL CrashReporter::TakeDesktopScreenshot() {
   CScreenCapture sc;   // Screen capture object
   ScreenshotInfo ssi;  // Screenshot params
 
@@ -278,7 +276,7 @@ BOOL CErrorReportSender::TakeDesktopScreenshot() {
   // Get screenshot flags passed by the parent process
   DWORD dwFlags = m_CrashInfo.m_dwScreenshotFlags;
 
-  BOOL bAllowDelete = (dwFlags & CR_AS_ALLOW_DELETE) != 0;
+  BOOL bAllowDelete = false;
 
   // Determine what image format to use (JPG or PNG)
   SCREENSHOT_IMAGE_FORMAT fmt = SCREENSHOT_FORMAT_PNG;  // PNG by default
@@ -329,17 +327,17 @@ BOOL CErrorReportSender::TakeDesktopScreenshot() {
 }
 
 // This callback function is called by MinidumpWriteDump
-BOOL CALLBACK CErrorReportSender::MiniDumpCallback(PVOID CallbackParam,
+BOOL CALLBACK CrashReporter::MiniDumpCallback(PVOID CallbackParam,
                                                    PMINIDUMP_CALLBACK_INPUT CallbackInput,
                                                    PMINIDUMP_CALLBACK_OUTPUT CallbackOutput) {
   // Delegate back to the CErrorReportSender
-  CErrorReportSender* pErrorReportSender = (CErrorReportSender*)CallbackParam;
+  CrashReporter* pErrorReportSender = (CrashReporter*)CallbackParam;
   return pErrorReportSender->OnMinidumpProgress(CallbackInput, CallbackOutput);
 }
 
 // This method is called when MinidumpWriteDump notifies us about
 // currently performed action
-BOOL CErrorReportSender::OnMinidumpProgress(const PMINIDUMP_CALLBACK_INPUT CallbackInput,
+BOOL CrashReporter::OnMinidumpProgress(const PMINIDUMP_CALLBACK_INPUT CallbackInput,
                                             PMINIDUMP_CALLBACK_OUTPUT CallbackOutput) {
   switch (CallbackInput->CallbackType) {
     case CancelCallback: {
@@ -397,7 +395,7 @@ BOOL CErrorReportSender::OnMinidumpProgress(const PMINIDUMP_CALLBACK_INPUT Callb
 }
 
 // This method creates the minidump of the process
-BOOL CErrorReportSender::CreateMiniDump() {
+BOOL CrashReporter::CreateMiniDump() {
   BOOL bStatus = FALSE;
   HMODULE hDbgHelp = NULL;
   HANDLE hFile = NULL;
@@ -457,8 +455,8 @@ BOOL CErrorReportSender::CreateMiniDump() {
   ATLASSERT(lpImagehlpApiVersionEx != NULL);
   if (lpImagehlpApiVersionEx != NULL) {
     API_VERSION CompiledApiVer;
-    CompiledApiVer.MajorVersion = 6;
-    CompiledApiVer.MinorVersion = 3;
+    CompiledApiVer.MajorVersion = 10;
+    CompiledApiVer.MinorVersion = 0;
     CompiledApiVer.Revision = 12;
     CompiledApiVer.Reserved = 0;
     LPAPI_VERSION pActualApiVer = lpImagehlpApiVersionEx(&CompiledApiVer);
@@ -535,7 +533,7 @@ cleanup:
   return bStatus;
 }
 
-BOOL CErrorReportSender::SetDumpPrivileges() {
+BOOL CrashReporter::SetDumpPrivileges() {
   // This method is used to have the current process be able to call MiniDumpWriteDump
   // This code was taken from:
   // http://social.msdn.microsoft.com/Forums/en-US/vcgeneral/thread/f54658a4-65d2-4196-8543-7e71f3ece4b6/
@@ -577,7 +575,7 @@ Cleanup:
 }
 
 // This method adds an element to XML file
-void CErrorReportSender::AddElemToXML(CString sName, CString sValue, TiXmlNode* root) {
+void CrashReporter::AddElemToXML(CString sName, CString sValue, TiXmlNode* root) {
   strconv_t strconv;
   TiXmlHandle hElem = new TiXmlElement(strconv.t2utf8(sName));
   root->LinkEndChild(hElem.ToNode());
@@ -586,7 +584,7 @@ void CErrorReportSender::AddElemToXML(CString sName, CString sValue, TiXmlNode* 
 }
 
 // This method generates an XML file describing the crash
-BOOL CErrorReportSender::CreateCrashDescriptionXML(CErrorReportInfo& eri) {
+BOOL CrashReporter::CreateCrashDescriptionXML(CErrorReportInfo& eri) {
   BOOL bStatus = FALSE;
   ERIFileItem fi;
   CString sFileName = eri.GetErrorReportDirName() + _T("\\crashrpt.xml");
@@ -809,7 +807,7 @@ cleanup:
 }
 
 // This method collects user-specified files
-BOOL CErrorReportSender::CollectCrashFiles() {
+BOOL CrashReporter::CollectCrashFiles() {
   BOOL bStatus = FALSE;
   CString str;
   CString sErrorReportDir = m_CrashInfo.GetReport(m_nCurReport)->GetErrorReportDirName();
@@ -908,7 +906,7 @@ cleanup:
   return 0;
 }
 
-BOOL CErrorReportSender::CollectSingleFile(ERIFileItem* pfi) {
+BOOL CrashReporter::CollectSingleFile(ERIFileItem* pfi) {
   BOOL bStatus = false;
   CString str;
   HANDLE hSrcFile = INVALID_HANDLE_VALUE;
@@ -1005,7 +1003,7 @@ cleanup:
   return bStatus;
 }
 
-BOOL CErrorReportSender::CollectFilesBySearchTemplate(ERIFileItem* pfi,
+BOOL CrashReporter::CollectFilesBySearchTemplate(ERIFileItem* pfi,
                                                       std::vector<ERIFileItem>& file_list) {
   CString sMsg;
   sMsg.Format(_T("Looking for files using search template: %s"), pfi->m_sSrcFile);
@@ -1062,7 +1060,7 @@ BOOL CErrorReportSender::CollectFilesBySearchTemplate(ERIFileItem* pfi,
 }
 
 // This method dumps a registry key contents to an XML file
-int CErrorReportSender::DumpRegKey(CString sRegKey, CString sDestFile, CString& sErrorMsg) {
+int CrashReporter::DumpRegKey(CString sRegKey, CString sDestFile, CString& sErrorMsg) {
   strconv_t strconv;
   TiXmlDocument document;
 
@@ -1120,7 +1118,7 @@ int CErrorReportSender::DumpRegKey(CString sRegKey, CString sDestFile, CString& 
   return (bSave == true) ? 0 : 1;
 }
 
-int CErrorReportSender::DumpRegKey(HKEY hParentKey, CString sSubKey, TiXmlElement* elem) {
+int CrashReporter::DumpRegKey(HKEY hParentKey, CString sSubKey, TiXmlElement* elem) {
   strconv_t strconv;
   HKEY hKey = NULL;
 
@@ -1195,7 +1193,9 @@ int CErrorReportSender::DumpRegKey(HKEY hParentKey, CString sSubKey, TiXmlElemen
           // Dump key values
           for (i = 0; i < (int)dwValues; i++) {
             LPWSTR szName = new WCHAR[dwMaxValueNameLen + 1];
+            memset(szName, 0, sizeof(WCHAR) * (dwMaxValueNameLen + 1));
             LPBYTE pData = new BYTE[dwMaxValueLen];
+            memset(pData, 0, sizeof(BYTE) * (dwMaxValueLen));
             DWORD dwNameLen = dwMaxValueNameLen + 1;
             DWORD dwValueLen = dwMaxValueLen;
             DWORD dwType = 0;
@@ -1309,7 +1309,7 @@ int CErrorReportSender::DumpRegKey(HKEY hParentKey, CString sSubKey, TiXmlElemen
 }
 
 // This method restarts the client application
-BOOL CErrorReportSender::RestartApp() {
+BOOL CrashReporter::RestartApp() {
   // Check our config - if we should restart the client app or not?
   if (m_CrashInfo.m_bAppRestart == FALSE)
     return FALSE;  // No need to restart
@@ -1372,7 +1372,7 @@ BOOL CErrorReportSender::RestartApp() {
 }
 
 // This method compresses the files contained in the report and produces a ZIP archive.
-BOOL CErrorReportSender::CompressReportFiles(CErrorReportInfo* eri) {
+BOOL CrashReporter::CompressReportFiles(CErrorReportInfo* eri) {
   BOOL bStatus = FALSE;
   strconv_t strconv;
   zipFile hZip = NULL;
@@ -1549,27 +1549,23 @@ cleanup:
   return bStatus;
 }
 
-BOOL CErrorReportSender::HasErrors() {
+BOOL CrashReporter::HasErrors() {
   return m_bErrors;
 }
 
-CString CErrorReportSender::GetLogFilePath() {
+CString CrashReporter::GetLogFilePath() {
   return m_Assync.GetLogFilePath();
 }
 
-int CErrorReportSender::TerminateAllCrashSenderProcesses() {
-  // This method looks for all runing CrashSender.exe processes
+int CrashReporter::TerminateAllCrashReportProcesses() {
+  // This method looks for all runing CrashReport.exe processes
   // and terminates each one. This may be needed when an application's installer
   // wants to shutdown all crash sender processes running in background
   // to replace the locked files.
 
-  // Format process name.
+
   CString sProcessName;
-#ifdef _DEBUG
-  sProcessName.Format(_T("CrashDumperd.exe"));
-#else
-  sProcessName.Format(_T("CrashDumper.exe"));
-#endif
+  sProcessName.Format(_T("CrashReport.exe"));
 
   PROCESSENTRY32 entry;
   entry.dwSize = sizeof(PROCESSENTRY32);

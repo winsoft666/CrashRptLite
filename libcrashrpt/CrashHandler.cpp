@@ -153,7 +153,7 @@ int CCrashHandler::Init(LPCTSTR lpcszAppName,
   }
 
   CString sCrashDumperName;
-  sCrashDumperName.Format(_T("crashdumper.exe"));
+  sCrashDumperName.Format(_T("crashreport.exe"));
 
   // Check that CrashSender.exe file exists
   if (m_sPathToCrashDumper.Right(1) != '\\')
@@ -162,7 +162,7 @@ int CCrashHandler::Init(LPCTSTR lpcszAppName,
   HANDLE hFile = CreateFile(m_sPathToCrashDumper + sCrashDumperName, FILE_GENERIC_READ,
                             FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
   if (hFile == INVALID_HANDLE_VALUE) {
-    crSetErrorMsg(_T("CrashDumper.exe is not found in the specified path."));
+    crSetErrorMsg(_T("CrashReport.exe is not found in the specified path."));
     return 1;
   }
   else {
@@ -565,7 +565,7 @@ int CCrashHandler::SetProcessExceptionHandlers(DWORD dwFlags) {
   if ((dwFlags & CR_INST_ALL_POSSIBLE_HANDLERS) == 0)
     dwFlags |= CR_INST_ALL_POSSIBLE_HANDLERS;
 
-  if (dwFlags & CR_INST_STRUCTURED_EXCEPTION_HANDLER) {
+  if (dwFlags & CR_INST_SEH_EXCEPTION_HANDLER) {
     // Install top-level SEH handler
     m_oldSehHandler = SetUnhandledExceptionFilter(SehHandler);
   }
@@ -817,7 +817,7 @@ int CCrashHandler::AddFile(LPCTSTR pszFile, LPCTSTR pszDestFile, LPCTSTR pszDesc
     fi.m_sDescription = pszDesc;
     fi.m_sSrcFilePath = pszFile;
     fi.m_bMakeCopy = (dwFlags & CR_AF_MAKE_FILE_COPY) != 0;
-    fi.m_bAllowDelete = (dwFlags & CR_AF_ALLOW_DELETE) != 0;
+    fi.m_bAllowDelete = false;
     if (pszDestFile != NULL) {
       fi.m_sDstFileName = pszDestFile;
     }
@@ -852,7 +852,7 @@ int CCrashHandler::AddFile(LPCTSTR pszFile, LPCTSTR pszDestFile, LPCTSTR pszDesc
     fi.m_sSrcFilePath = pszFile;
     fi.m_sDstFileName = Utility::GetFileName(pszFile);
     fi.m_bMakeCopy = (dwFlags & CR_AF_MAKE_FILE_COPY) != 0;
-    fi.m_bAllowDelete = (dwFlags & CR_AF_ALLOW_DELETE) != 0;
+    fi.m_bAllowDelete = false;
     m_files[fi.m_sDstFileName] = fi;
 
     // Pack this file item into shared mem.
@@ -980,7 +980,7 @@ int CCrashHandler::GenerateErrorReport(PCR_EXCEPTION_INFO pExceptionInfo) {
 
 
     // Run new CrashSender.exe process
-    result = LaunchCrashSender(m_sCrashGUID, TRUE, &pExceptionInfo->hSenderProcess);
+    result = LaunchCrashSender(m_sCrashGUID, TRUE, &pExceptionInfo->hCrashReportProcess);
   
 
   // New-style callback. Notify client about the second stage
@@ -1074,7 +1074,7 @@ int CCrashHandler::AddRegKey(LPCTSTR szRegKey, LPCTSTR szDstFileName, DWORD dwFl
 
   RegKeyInfo rki;
   rki.m_sDstFileName = sDstFileName;
-  rki.m_bAllowDelete = (dwFlags & CR_AR_ALLOW_DELETE) != 0;
+  rki.m_bAllowDelete = false;
 
   m_RegKeys[CString(szRegKey)] = rki;
 

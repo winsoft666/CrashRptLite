@@ -2,13 +2,13 @@
 
 #include "resource.h"
 
-class CrashSenderApp : public CWinApp {
+class CrashReportApp : public CWinApp {
  public:
-  CrashSenderApp();
+  CrashReportApp();
 
  protected:
   virtual BOOL InitInstance();
 
 };
 
-extern CrashSenderApp theApp;
+extern CrashReportApp theApp;

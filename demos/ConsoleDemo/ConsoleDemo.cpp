@@ -41,6 +41,8 @@ int main(int argc, char* argv[])
 
     crAddScreenshot(CR_AS_PROCESS_WINDOWS, 0);
 
+    crAddRegKeyW(L"HKEY_LOCAL_MACHINE\\SOFTWARE\\GogoGame", L"regkey.xml", 0);
+
     // Check result
     if(nInstResult!=0)
     {

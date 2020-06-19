@@ -130,13 +130,9 @@ int CMFCDemoApp::Run()
   memset(&info, 0, sizeof(CR_INSTALL_INFO));
   info.cb = sizeof(CR_INSTALL_INFO);  
   info.pszAppName = _T("MFCDemo"); // Define application name.
-  //info.pszAppVersion = _T("1.0.0"); // Define application version.
-  // URL for sending error reports over HTTP.
-  info.pszUrl = _T("http://someserver.com/crashrpt.php");                    
+  //info.pszAppVersion = _T("1.0.0"); // Define application version.               
   // Install all available exception handlers.
   info.dwFlags |= CR_INST_ALL_POSSIBLE_HANDLERS; 
-  // Provide privacy policy URL
-  info.pszPrivacyPolicyURL = _T("http://someserver.com/privacy.html");
 
   int nResult = crInstall(&info);
   if(nResult!=0)

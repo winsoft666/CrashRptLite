@@ -16,6 +16,7 @@ be found in the Authors.txt file in the root of the source tree.
 #pragma once
 
 #include <windows.h>
+#include <dbghelp.h>
 #include <errno.h>
 #include <atlstr.h>
 #include <atltypes.h>
@@ -24,7 +25,6 @@ be found in the Authors.txt file in the root of the source tree.
 #include <vector>
 #include <stdlib.h>
 #include <string>
-#include <dbghelp.h>
 #include <shlobj.h>
 #include <Psapi.h>
 #include <time.h>

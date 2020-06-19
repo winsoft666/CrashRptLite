@@ -24,6 +24,7 @@ include_directories(./include)
 
 # Add library build target
 if(CRASHRPT_BUILD_STATIC_LIBS)
+  add_definitions(-DCRASHRPT_STATIC_LIB)
 	add_library(libcrashrpt STATIC ${source_files} ${header_files})
 else(CRASHRPT_BUILD_STATIC_LIBS)
 	add_library(libcrashrpt SHARED ${source_files} ${header_files})

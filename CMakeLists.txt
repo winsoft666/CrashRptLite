@@ -103,8 +103,9 @@ endif()
 
 if(BUILD_TESTS)
   add_subdirectory("demos/ConsoleDemo")
+  add_subdirectory("demos/MFCDemo")
 endif()
-add_subdirectory("crashdumper")
+add_subdirectory("crashreport")
 add_subdirectory("libcrashrpt")
 
 

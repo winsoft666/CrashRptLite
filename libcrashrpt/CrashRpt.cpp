@@ -44,12 +44,12 @@ CRASHRPTAPI(int) crInstallW(CR_INSTALL_INFOW* pInfo) {
 
   LPCTSTR ptszAppName = strconv.w2t((LPWSTR)pInfo->pszAppName);
   LPCTSTR ptszAppVersion = strconv.w2t((LPWSTR)pInfo->pszAppVersion);
-  LPCTSTR ptszCrashSenderPath = strconv.w2t((LPWSTR)pInfo->pszCrashSenderPath);
+  LPCTSTR ptszCrashSenderPath = strconv.w2t((LPWSTR)pInfo->pszCrashReportPath);
   LPCTSTR ptszDebugHelpDLL_file = strconv.w2t((LPWSTR)pInfo->pszDebugHelpDLL);
   MINIDUMP_TYPE miniDumpType = pInfo->uMiniDumpType;
   LPCTSTR ptszErrorReportSaveDir = strconv.w2t((LPWSTR)pInfo->pszErrorReportSaveDir);
   LPCTSTR ptszRestartCmdLine = strconv.w2t((LPWSTR)pInfo->pszRestartCmdLine);
-  LPCTSTR ptszCustomSenderIcon = strconv.w2t((LPWSTR)pInfo->pszCustomSenderIcon);
+  LPCTSTR ptszCustomSenderIcon = strconv.w2t((LPWSTR)pInfo->pszCustomCrashReportIcon);
 
   int nInitResult = pCrashHandler->Init(
       ptszAppName, ptszAppVersion, ptszCrashSenderPath, &pInfo->uPriorities, pInfo->dwFlags, 
@@ -178,8 +178,7 @@ CRASHRPTAPI(int) crUninstall() {
 }
 
 // Sets C++ exception handlers for the calling thread
-CRASHRPTAPI(int)
-crInstallToCurrentThread2(DWORD dwFlags) {
+CRASHRPTAPI(int) crInstallToCurrentThread(DWORD dwFlags) {
   crSetErrorMsg(_T("Success."));
 
   CCrashHandler* pCrashHandler = CCrashHandler::GetCurrentProcessCrashHandler();
@@ -198,8 +197,7 @@ crInstallToCurrentThread2(DWORD dwFlags) {
 }
 
 // Unsets C++ exception handlers from the calling thread
-CRASHRPTAPI(int)
-crUninstallFromCurrentThread() {
+CRASHRPTAPI(int) crUninstallFromCurrentThread() {
   crSetErrorMsg(_T("Success."));
 
   CCrashHandler* pCrashHandler = CCrashHandler::GetCurrentProcessCrashHandler();
@@ -221,13 +219,8 @@ crUninstallFromCurrentThread() {
   return 0;
 }
 
-CRASHRPTAPI(int)
-crInstallToCurrentThread() {
-  return crInstallToCurrentThread2(0);
-}
 
-CRASHRPTAPI(int)
-crSetCrashCallbackW(PFNCRASHCALLBACKW pfnCallbackFunc, LPVOID lpParam) {
+CRASHRPTAPI(int) crSetCrashCallbackW(PFNCRASHCALLBACKW pfnCallbackFunc, LPVOID lpParam) {
   crSetErrorMsg(_T("Unspecified error."));
 
   CCrashHandler* pCrashHandler = CCrashHandler::GetCurrentProcessCrashHandler();
@@ -244,8 +237,7 @@ crSetCrashCallbackW(PFNCRASHCALLBACKW pfnCallbackFunc, LPVOID lpParam) {
   return 0;
 }
 
-CRASHRPTAPI(int)
-crSetCrashCallbackA(PFNCRASHCALLBACKA pfnCallbackFunc, LPVOID lpParam) {
+CRASHRPTAPI(int) crSetCrashCallbackA(PFNCRASHCALLBACKA pfnCallbackFunc, LPVOID lpParam) {
   crSetErrorMsg(_T("Unspecified error."));
 
   CCrashHandler* pCrashHandler = CCrashHandler::GetCurrentProcessCrashHandler();
@@ -262,8 +254,7 @@ crSetCrashCallbackA(PFNCRASHCALLBACKA pfnCallbackFunc, LPVOID lpParam) {
   return 0;
 }
 
-CRASHRPTAPI(int)
-crAddFileW(PCWSTR pszFile, PCWSTR pszDestFile, PCWSTR pszDesc, DWORD dwFlags) {
+CRASHRPTAPI(int) crAddFileW(PCWSTR pszFile, PCWSTR pszDestFile, PCWSTR pszDesc, DWORD dwFlags) {
   crSetErrorMsg(_T("Success."));
 
   strconv_t strconv;
@@ -289,8 +280,7 @@ crAddFileW(PCWSTR pszFile, PCWSTR pszDestFile, PCWSTR pszDesc, DWORD dwFlags) {
   return 0;
 }
 
-CRASHRPTAPI(int)
-crAddFileA(PCSTR pszFile, PCSTR pszDestFile, PCSTR pszDesc, DWORD dwFlags) {
+CRASHRPTAPI(int) crAddFileA(PCSTR pszFile, PCSTR pszDestFile, PCSTR pszDesc, DWORD dwFlags) {
   // Convert parameters to wide char
 
   strconv_t strconv;
@@ -302,8 +292,7 @@ crAddFileA(PCSTR pszFile, PCSTR pszDestFile, PCSTR pszDesc, DWORD dwFlags) {
   return crAddFileW(pwszFile, pwszDestFile, pwszDesc, dwFlags);
 }
 
-CRASHRPTAPI(int)
-crAddScreenshot(DWORD dwFlags, int nJpegQuality) {
+CRASHRPTAPI(int) crAddScreenshot(DWORD dwFlags, int nJpegQuality) {
   crSetErrorMsg(_T("Unspecified error."));
 
   CCrashHandler* pCrashHandler = CCrashHandler::GetCurrentProcessCrashHandler();
@@ -317,8 +306,7 @@ crAddScreenshot(DWORD dwFlags, int nJpegQuality) {
 }
 
 
-CRASHRPTAPI(int)
-crAddPropertyW(LPCWSTR pszPropName, LPCWSTR pszPropValue) {
+CRASHRPTAPI(int) crAddPropertyW(LPCWSTR pszPropName, LPCWSTR pszPropValue) {
   crSetErrorMsg(_T("Unspecified error."));
 
   strconv_t strconv;
@@ -342,15 +330,13 @@ crAddPropertyW(LPCWSTR pszPropName, LPCWSTR pszPropValue) {
   return 0;
 }
 
-CRASHRPTAPI(int)
-crAddPropertyA(LPCSTR pszPropName, LPCSTR pszPropValue) {
+CRASHRPTAPI(int) crAddPropertyA(LPCSTR pszPropName, LPCSTR pszPropValue) {
   // This is just a wrapper for wide-char function version
   strconv_t strconv;
   return crAddPropertyW(strconv.a2w(pszPropName), strconv.a2w(pszPropValue));
 }
 
-CRASHRPTAPI(int)
-crAddRegKeyW(LPCWSTR pszRegKey, LPCWSTR pszDstFileName, DWORD dwFlags) {
+CRASHRPTAPI(int) crAddRegKeyW(LPCWSTR pszRegKey, LPCWSTR pszDstFileName, DWORD dwFlags) {
   crSetErrorMsg(_T("Unspecified error."));
 
   strconv_t strconv;
@@ -374,15 +360,12 @@ crAddRegKeyW(LPCWSTR pszRegKey, LPCWSTR pszDstFileName, DWORD dwFlags) {
   return 0;
 }
 
-CRASHRPTAPI(int)
-crAddRegKeyA(LPCSTR pszRegKey, LPCSTR pszDstFileName, DWORD dwFlags) {
-  // This is just a wrapper for wide-char function version
+CRASHRPTAPI(int) crAddRegKeyA(LPCSTR pszRegKey, LPCSTR pszDstFileName, DWORD dwFlags) {
   strconv_t strconv;
   return crAddRegKeyW(strconv.a2w(pszRegKey), strconv.a2w(pszDstFileName), dwFlags);
 }
 
-CRASHRPTAPI(int)
-crGenerateErrorReport(CR_EXCEPTION_INFO* pExceptionInfo) {
+CRASHRPTAPI(int) crGenerateErrorReport(CR_EXCEPTION_INFO* pExceptionInfo) {
   crSetErrorMsg(_T("Unspecified error."));
 
   if (pExceptionInfo == NULL || pExceptionInfo->cb != sizeof(CR_EXCEPTION_INFO)) {
@@ -402,8 +385,7 @@ crGenerateErrorReport(CR_EXCEPTION_INFO* pExceptionInfo) {
   return pCrashHandler->GenerateErrorReport(pExceptionInfo);
 }
 
-CRASHRPTAPI(int)
-crGetLastErrorMsgW(LPWSTR pszBuffer, UINT uBuffSize) {
+CRASHRPTAPI(int) crGetLastErrorMsgW(LPWSTR pszBuffer, UINT uBuffSize) {
   if (pszBuffer == NULL || uBuffSize == 0)
     return -1;  // Null pointer to buffer
 
@@ -432,8 +414,7 @@ crGetLastErrorMsgW(LPWSTR pszBuffer, UINT uBuffSize) {
   return size;
 }
 
-CRASHRPTAPI(int)
-crGetLastErrorMsgA(LPSTR pszBuffer, UINT uBuffSize) {
+CRASHRPTAPI(int) crGetLastErrorMsgA(LPSTR pszBuffer, UINT uBuffSize) {
   if (pszBuffer == NULL || uBuffSize == 0)
     return -1;
 
@@ -474,8 +455,7 @@ int crClearErrorMsg() {
   return 0;
 }
 
-CRASHRPTAPI(int)
-crExceptionFilter(unsigned int code, struct _EXCEPTION_POINTERS* ep) {
+CRASHRPTAPI(int) crExceptionFilter(unsigned int code, struct _EXCEPTION_POINTERS* ep) {
   crSetErrorMsg(_T("Unspecified error."));
 
   CCrashHandler* pCrashHandler = CCrashHandler::GetCurrentProcessCrashHandler();
@@ -609,8 +589,7 @@ static void CauseStackOverflow() {
   CauseStackOverflow();
 }
 
-CRASHRPTAPI(int)
-crEmulateCrash(unsigned ExceptionType) throw(...) {
+CRASHRPTAPI(int) crEmulateCrash(unsigned ExceptionType) throw(...) {
   crSetErrorMsg(_T("Unspecified error."));
 
   switch (ExceptionType) {
@@ -707,7 +686,7 @@ crEmulateCrash(unsigned ExceptionType) throw(...) {
   return 1;
 }
 
-#ifndef CRASHRPT_LIB
+#ifndef CRASHRPT_STATIC_LIB
 BOOL APIENTRY DllMain(HANDLE hModule, DWORD dwReason, LPVOID /*lpReserved*/) {
   if (dwReason == DLL_PROCESS_ATTACH) {
     // Save handle to the CrashRpt.dll module.

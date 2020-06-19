@@ -11,16 +11,16 @@ enum ActionType {
   RESTART_APP = 0x04,         // Crashed app should be restarted.
 };
 
-class CErrorReportSender {
+class CrashReporter {
  public:
   // Constructor.
-  CErrorReportSender();
+  CrashReporter();
 
   // Destructor.
-  virtual ~CErrorReportSender();
+  virtual ~CrashReporter();
 
   // Returns singleton of this class.
-  static CErrorReportSender* GetInstance();
+  static CrashReporter* GetInstance();
 
   // Performs initialization.
   BOOL Init(LPCTSTR szFileMappingName);
@@ -68,7 +68,7 @@ class CErrorReportSender {
   BOOL HasErrors();
 
   // This method finds and terminates all instances of CrashSender.exe process.
-  static int TerminateAllCrashSenderProcesses();
+  static int TerminateAllCrashReportProcesses();
 
  private:
   // Creates log file
@@ -86,12 +86,9 @@ class CErrorReportSender {
   // Includes all files matching search pattern to crash report
   BOOL CollectFilesBySearchTemplate(ERIFileItem* pfi, std::vector<ERIFileItem>& file_list);
 
- 
-
   // Takes desktop screenshot.
   BOOL TakeDesktopScreenshot();
 
-  
   // Creates crash dump file.
   BOOL CreateMiniDump();
 
@@ -131,7 +128,7 @@ class CErrorReportSender {
 
 
   // Internal variables
-  static CErrorReportSender* m_pInstance;  // Singleton
+  static CrashReporter* m_pInstance;       // Singleton
   CCrashInfoReader m_CrashInfo;            // Contains crash information.
   CString m_sErrorMsg;                     // Last error message.
   HWND m_hWndNotify;                       // Notification window.

@@ -11,12 +11,12 @@ fix_default_compiler_settings_()
 
 # Add include dir
 include_directories(${CMAKE_SOURCE_DIR}/include 
-					${CMAKE_SOURCE_DIR}/LibCrashRpt/Include )
+					${CMAKE_SOURCE_DIR}/libcrashrpt/Include )
 
 # Add executable build target
 add_executable(ConsoleDemo ${source_files} ${header_files})
 
 # Add input link libraries
-target_link_libraries(ConsoleDemo LibCrashRpt)
+target_link_libraries(ConsoleDemo libcrashrpt)
 
 set_target_properties(ConsoleDemo PROPERTIES DEBUG_POSTFIX d )

@@ -1,20 +1,19 @@
 #include "stdafx.h"
-#include "CrashDumperApp.h"
+#include "CrashReportApp.h"
 #include "resource.h"
-#include "CrashDumper.h"
+#include "CrashReporter.h"
 #include "strconv.h"
 #include "Utility.h"
 
 
-
-CrashSenderApp::CrashSenderApp() {
+CrashReportApp::CrashReportApp() {
   m_dwRestartManagerSupportFlags = AFX_RESTART_MANAGER_SUPPORT_RESTART;
 }
 
 
-CrashSenderApp theApp;
+CrashReportApp theApp;
 
-BOOL CrashSenderApp::InitInstance() {
+BOOL CrashReportApp::InitInstance() {
   INITCOMMONCONTROLSEX InitCtrls;
   InitCtrls.dwSize = sizeof(InitCtrls);
   InitCtrls.dwICC = ICC_WIN95_CLASSES;
@@ -34,25 +33,25 @@ BOOL CrashSenderApp::InitInstance() {
     return 1;
 
   if (_tcscmp(argv[1], _T("/terminate")) == 0) {
-    return CErrorReportSender::TerminateAllCrashSenderProcesses();
+    return CrashReporter::TerminateAllCrashReportProcesses();
   }
 
 
   CString sFileMappingName = CString(argv[1]);
 
-  CErrorReportSender* pSender = CErrorReportSender::GetInstance();
+  CrashReporter* pReporter = CrashReporter::GetInstance();
 
-  BOOL bInit = pSender->Init(sFileMappingName.GetBuffer(0));
+  BOOL bInit = pReporter->Init(sFileMappingName.GetBuffer(0));
   if (!bInit) {
-    delete pSender;
+    delete pReporter;
     return 0;
   }
 
-  pSender->Run();
-  pSender->WaitForCompletion();
-  nRet = pSender->GetStatus();
+  pReporter->Run();
+  pReporter->WaitForCompletion();
+  nRet = pReporter->GetStatus();
   
-  delete pSender;
+  delete pReporter;
 
   return FALSE;
 }

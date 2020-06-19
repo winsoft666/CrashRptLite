@@ -23,7 +23,7 @@
 #include <iostream>
 #include <fstream>
 
-#include "dbghelp.h"
+#include <dbghelp.h>
 #include <mapi.h>          // MAPI function defs
 #include <sys/stat.h>
 #include <shellapi.h>
