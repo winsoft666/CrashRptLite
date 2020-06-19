@@ -26,19 +26,6 @@ include_directories( ${CMAKE_SOURCE_DIR}/libcrashrpt/include
                             ${CMAKE_SOURCE_DIR}/thirdparty/libpng 
                             ${CMAKE_SOURCE_DIR}/thirdparty/tinyxml)
 
-if(NOT CMAKE_CL_64)
-	# link_directories( ${CMAKE_SOURCE_DIR}/thirdparty/dbghelp/lib/x86 )
-else(NOT CMAKE_CL_64)
-	# link_directories( ${CMAKE_SOURCE_DIR}/thirdparty/dbghelp/lib/x64 )
-endif(NOT CMAKE_CL_64)
-
-# Add executable build target
-if(CRASHRPT_BUILD_STATIC_LIBS)
-  SET(CMAKE_MFC_FLAG 1)
-else()
-  ADD_DEFINITIONS(-D_AFXDLL)
-  SET(CMAKE_MFC_FLAG 2)
-endif()
 
 add_executable(crashreport WIN32 ${source_files} ${header_files})
 

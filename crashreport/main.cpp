@@ -5,25 +5,11 @@
 #include "strconv.h"
 #include "Utility.h"
 
-
-CrashReportApp::CrashReportApp() {
-  m_dwRestartManagerSupportFlags = AFX_RESTART_MANAGER_SUPPORT_RESTART;
-}
-
-
-CrashReportApp theApp;
-
-BOOL CrashReportApp::InitInstance() {
-  INITCOMMONCONTROLSEX InitCtrls;
-  InitCtrls.dwSize = sizeof(InitCtrls);
-  InitCtrls.dwICC = ICC_WIN95_CLASSES;
-  InitCommonControlsEx(&InitCtrls);
-
-  CWinApp::InitInstance();
-
-  AfxEnableControlContainer();
-
-  int nRet = 0;
+int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPWSTR lpCmdLine, _In_ int nCmdShow) {
+  UNREFERENCED_PARAMETER(hInstance);
+  UNREFERENCED_PARAMETER(hPrevInstance);
+  UNREFERENCED_PARAMETER(lpCmdLine);
+  UNREFERENCED_PARAMETER(nCmdShow);
 
   LPCWSTR szCommandLine = GetCommandLineW();
 
@@ -36,7 +22,6 @@ BOOL CrashReportApp::InitInstance() {
     return CrashReporter::TerminateAllCrashReportProcesses();
   }
 
-
   CString sFileMappingName = CString(argv[1]);
 
   CrashReporter* pReporter = CrashReporter::GetInstance();
@@ -44,14 +29,14 @@ BOOL CrashReportApp::InitInstance() {
   BOOL bInit = pReporter->Init(sFileMappingName.GetBuffer(0));
   if (!bInit) {
     delete pReporter;
-    return 0;
+    return 1;
   }
 
   pReporter->Run();
   pReporter->WaitForCompletion();
-  nRet = pReporter->GetStatus();
-  
+  int nRet = pReporter->GetStatus();
+
   delete pReporter;
 
-  return FALSE;
+  return nRet;
 }

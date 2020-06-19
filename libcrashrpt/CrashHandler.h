@@ -49,8 +49,7 @@ struct RegKeyInfo {
   RegKeyInfo() { m_bAllowDelete = false; }
 
   CString m_sDstFileName;  // Destination file name (as seen in ZIP archive).
-  bool
-      m_bAllowDelete;  // Whether to allow user deleting the file from context menu of Error Report Details dialog.
+  bool m_bAllowDelete;  // Whether to allow user deleting the file from context menu of Error Report Details dialog.
 };
 
 // This class is used to set exception handlers, catch exceptions

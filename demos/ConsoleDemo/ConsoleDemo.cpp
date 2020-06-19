@@ -31,7 +31,7 @@ int main(int argc, char* argv[])
     memset(&info, 0, sizeof(CR_INSTALL_INFO));
     info.cb = sizeof(CR_INSTALL_INFO);             // Size of the structure
     info.pszAppName = _T("CrashRpt Console Test"); // App name
-    info.pszAppVersion = _T("1.0.0");              // App version
+    //info.pszAppVersion = _T("1.0.0");              // App version
 
     // Install crash handlers
     int nInstResult = crInstall(&info);            

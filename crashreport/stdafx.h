@@ -1,20 +1,5 @@
 #pragma once
 
-#ifndef VC_EXTRALEAN
-#define VC_EXTRALEAN
-#endif
-#include <SDKDDKVer.h>
-
-#define _ATL_CSTRING_EXPLICIT_CONSTRUCTORS
-#define _AFX_ALL_WARNINGS
-#include <afxwin.h>
-#include <afxext.h>
-#include <afxdisp.h>
-#ifndef _AFX_NO_AFXCMN_SUPPORT
-#include <afxcmn.h> 
-#endif               // _AFX_NO_AFXCMN_SUPPORT
-
-
 #include <errno.h>
 #include <string>
 #include <vector>
@@ -23,6 +8,11 @@
 #include <iostream>
 #include <fstream>
 
+
+#include <windows.h>
+#include <tchar.h>
+#include <atlstr.h>
+#include <atltypes.h>
 #include <dbghelp.h>
 #include <mapi.h>          // MAPI function defs
 #include <sys/stat.h>
