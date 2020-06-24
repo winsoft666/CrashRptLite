@@ -426,14 +426,14 @@ typedef struct tagCR_INSTALL_INFOA {
   WORD cb;
   LPCSTR pszAppName;
   LPCSTR pszAppVersion;
-  LPCSTR pszCrashSenderPath;
+  LPCSTR pszCrashReportPath;
   UINT uPriorities[5];
   DWORD dwFlags;
   LPCSTR pszDebugHelpDLL;
   MINIDUMP_TYPE uMiniDumpType;
   LPCSTR pszErrorReportSaveDir;
   LPCSTR pszRestartCmdLine;
-  LPCSTR pszCustomSenderIcon;
+  LPCSTR pszCustomCrashReportIcon;
   int nRestartTimeout;
 } CR_INSTALL_INFOA;
 

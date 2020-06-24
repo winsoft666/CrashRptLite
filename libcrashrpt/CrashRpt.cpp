@@ -110,12 +110,12 @@ CRASHRPTAPI(int) crInstallA(CR_INSTALL_INFOA* pInfo) {
 
   LPCTSTR ptszAppName = strconv.a2t((LPSTR)pInfo->pszAppName);
   LPCTSTR ptszAppVersion = strconv.a2t((LPSTR)pInfo->pszAppVersion);
-  LPCTSTR ptszCrashSenderPath = strconv.a2t((LPSTR)pInfo->pszCrashSenderPath);
+  LPCTSTR ptszCrashSenderPath = strconv.a2t((LPSTR)pInfo->pszCrashReportPath);
   LPCTSTR ptszDebugHelpDLL_file = strconv.a2t((LPSTR)pInfo->pszDebugHelpDLL);
   MINIDUMP_TYPE miniDumpType = pInfo->uMiniDumpType;
   LPCTSTR ptszErrorReportSaveDir = strconv.a2t((LPSTR)pInfo->pszErrorReportSaveDir);
   LPCTSTR ptszRestartCmdLine = strconv.a2t((LPSTR)pInfo->pszRestartCmdLine);
-  LPCTSTR ptszCustomSenderIcon = strconv.a2t((LPSTR)pInfo->pszCustomSenderIcon);
+  LPCTSTR ptszCustomSenderIcon = strconv.a2t((LPSTR)pInfo->pszCustomCrashReportIcon);
 
   int nInitResult = pCrashHandler->Init(
       ptszAppName, ptszAppVersion, ptszCrashSenderPath, 
