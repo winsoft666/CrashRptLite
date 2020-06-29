@@ -128,8 +128,6 @@ int CCrashHandler::Init(LPCTSTR lpcszAppName,
     }
   }
 
-  BOOL bStoreZIPArchives = (dwFlags & CR_INST_STORE_ZIP_ARCHIVES) ? TRUE : FALSE;
-
   // Save restart command line
   m_sRestartCmdLine = lpcszRestartCmdLine;
   m_nRestartTimeout = nRestartTimeout;
