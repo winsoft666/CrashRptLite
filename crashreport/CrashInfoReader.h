@@ -293,7 +293,6 @@ class CCrashInfoReader {
   LONG64 GetUncompressedReportSize(CErrorReportInfo& eri);
 
   std::vector<CErrorReportInfo> m_Reports;  // Array of error reports.
-  CString m_sINIFile;                       // Path to ~CrashRpt.ini file.
   CSharedMem m_SharedMem;                   // Shared memory
   CRASH_DESCRIPTION* m_pCrashDesc;          // Pointer to crash descritpion
   CString m_sErrorMsg;                      // Last error message.

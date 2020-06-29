@@ -339,9 +339,6 @@ int CCrashInfoReader::Init(LPCTSTR szFileMappingName) {
   if (!bCreateFolder)
     return 3;
 
-  // Save path to INI file storing settings
-  m_sINIFile = m_sUnsentCrashReportsFolder + _T("\\~CrashRpt.ini");
-
   CollectMiscCrashInfo(eri);
 
   eri.m_sErrorReportDirName = m_sUnsentCrashReportsFolder + _T("\\") + eri.m_sCrashGUID;

@@ -14,7 +14,6 @@ CrashReporter::CrashReporter() {
   m_nStatus = 0;
   m_nCurReport = 0;
   m_SendAttempt = 0;
-  m_Action = COLLECT_CRASH_INFO;
   m_bExport = FALSE;
   m_bErrors = FALSE;
 }
@@ -105,9 +104,7 @@ BOOL CrashReporter::Run() {
 
   SetExportFlag(FALSE, _T(""));
 
-  m_Action = COMPRESS_REPORT | RESTART_APP | COLLECT_CRASH_INFO;
-
-  thread_ = std::async(std::launch::async, &CrashReporter::DoWork, this, m_Action);
+  thread_ = std::async(std::launch::async, &CrashReporter::DoWork, this);
 
   return TRUE;
 }
@@ -134,82 +131,75 @@ void CrashReporter::UnblockParentProcess() {
     SetEvent(hEvent);  // Signal event
 }
 
-// This method collects required crash report files (minidump, screenshot etc.)
-// and then sends the error report over the Internet.
-BOOL CrashReporter::DoWork(int Action) {
+
+BOOL CrashReporter::DoWork() {
   // Reset the completion event
   m_Assync.Reset();
   InitLog();
 
-  if (Action & COLLECT_CRASH_INFO)  // Collect crash report files
+  // Add a message to log
+  m_Assync.SetProgress(_T("Start collecting information about the crash..."), 0, false);
+
+  // First take a screenshot of user's desktop (if needed).
+  TakeDesktopScreenshot();
+
+  if (m_Assync.IsCancelled())  // Check if user-cancelled
   {
-    // Add a message to log
-    m_Assync.SetProgress(_T("Start collecting information about the crash..."), 0, false);
-
-    // First take a screenshot of user's desktop (if needed).
-    TakeDesktopScreenshot();
-
-    if (m_Assync.IsCancelled())  // Check if user-cancelled
-    {
-      // Parent process can now terminate
-      UnblockParentProcess();
-
-      // Add a message to log
-      m_Assync.SetProgress(_T("[exit_silently]"), 0, false);
-      return FALSE;
-    }
-
-    // Create crash dump.
-    CreateMiniDump();
-
-    if (m_Assync.IsCancelled())  // Check if user-cancelled
-    {
-      // Parent process can now terminate
-      UnblockParentProcess();
-
-      // Add a message to log
-      m_Assync.SetProgress(_T("[exit_silently]"), 0, false);
-      return FALSE;
-    }
-
-    // Notify the parent process that we have finished with minidump,
-    // so the parent process is able to unblock and terminate itself.
+    // Parent process can now terminate
     UnblockParentProcess();
 
-    // Copy user-provided files.
-    CollectCrashFiles();
+    // Add a message to log
+    m_Assync.SetProgress(_T("[exit_silently]"), 0, false);
+    return FALSE;
+  }
 
-    if (m_Assync.IsCancelled())  // Check if user-cancelled
-    {
-      // Add a message to log
-      m_Assync.SetProgress(_T("[exit_silently]"), 0, false);
-      return FALSE;
-    }
+  // Create crash dump.
+  CreateMiniDump();
 
-    if (m_Assync.IsCancelled())  // Check if user-cancelled
-    {
-      // Add a message to log
-      m_Assync.SetProgress(_T("[exit_silently]"), 0, false);
-      return FALSE;
-    }
-
-    // Create crash description XML
-    CreateCrashDescriptionXML(*m_CrashInfo.GetReport(0));
+  if (m_Assync.IsCancelled())  // Check if user-cancelled
+  {
+    // Parent process can now terminate
+    UnblockParentProcess();
 
     // Add a message to log
-    m_Assync.SetProgress(_T("[confirm_send_report]"), 100, false);
+    m_Assync.SetProgress(_T("[exit_silently]"), 0, false);
+    return FALSE;
   }
 
-  if (Action & RESTART_APP) {
-    RestartApp();
+  // Notify the parent process that we have finished with minidump,
+  // so the parent process is able to unblock and terminate itself.
+  UnblockParentProcess();
+
+  // Copy user-provided files.
+  CollectCrashFiles();
+
+  if (m_Assync.IsCancelled())  // Check if user-cancelled
+  {
+    m_Assync.SetProgress(_T("[exit_silently]"), 0, false);
+    return FALSE;
   }
 
-  if (Action & COMPRESS_REPORT) {
+  if (m_Assync.IsCancelled())  // Check if user-cancelled
+  {
+    m_Assync.SetProgress(_T("[exit_silently]"), 0, false);
+    return FALSE;
+  }
+
+  // Create crash description XML
+  CreateCrashDescriptionXML(*m_CrashInfo.GetReport(0));
+
+  // Add a message to log
+  m_Assync.SetProgress(_T("[confirm_send_report]"), 100, false);
+
+  if (m_CrashInfo.m_bStoreZIPArchives) {
     BOOL bCompress = CompressReportFiles(m_CrashInfo.GetReport(m_nCurReport));
     if (!bCompress) {
       m_Assync.SetProgress(_T("[status_failed]"), 100, false);
-      return FALSE;
     }
+  }
+
+  if (m_CrashInfo.m_bAppRestart) {
+    RestartApp();
   }
 
   return TRUE;
@@ -243,12 +233,6 @@ void CrashReporter::FeedbackReady(int code) {
 
 BOOL CrashReporter::Finalize() {
   WaitForCompletion();
-
-  if (m_CrashInfo.m_bStoreZIPArchives) {
-    DoWork(COMPRESS_REPORT);
-  }
-
-  DoWork(RESTART_APP);
 
   return TRUE;
 }
@@ -394,8 +378,13 @@ BOOL CrashReporter::OnMinidumpProgress(const PMINIDUMP_CALLBACK_INPUT CallbackIn
   return TRUE;
 }
 
-// This method creates the minidump of the process
+
 BOOL CrashReporter::CreateMiniDump() {
+  if (m_CrashInfo.m_bGenerateMinidump == FALSE) {
+    m_Assync.SetProgress(_T("Crash dump generation disabled; skipping."), 0, false);
+    return TRUE;
+  }
+
   BOOL bStatus = FALSE;
   HMODULE hDbgHelp = NULL;
   HANDLE hFile = NULL;
@@ -407,11 +396,7 @@ BOOL CrashReporter::CreateMiniDump() {
   ERIFileItem fi;
   CString sErrorMsg;
 
-  // Check our config - should we generate the minidump or not?
-  if (m_CrashInfo.m_bGenerateMinidump == FALSE) {
-    m_Assync.SetProgress(_T("Crash dump generation disabled; skipping."), 0, false);
-    return TRUE;
-  }
+
 
   // Update progress
   m_Assync.SetProgress(_T("Creating crash dump file..."), 0, false);

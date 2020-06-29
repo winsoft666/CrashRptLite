@@ -4,13 +4,6 @@
 #include "CrashInfoReader.h"
 #include <future>
 
-// Action type
-enum ActionType {
-  COLLECT_CRASH_INFO = 0x01,  // Crash info should be collected.
-  COMPRESS_REPORT = 0x02,     // Error report files should be packed into ZIP archive.
-  RESTART_APP = 0x04,         // Crashed app should be restarted.
-};
-
 class CrashReporter {
  public:
   // Constructor.
@@ -71,11 +64,9 @@ class CrashReporter {
   static int TerminateAllCrashReportProcesses();
 
  private:
-  // Creates log file
   BOOL InitLog();
 
-  // This method performs an action or several actions.
-  BOOL DoWork(int Action);
+  BOOL DoWork();
 
   // Collects crash report files.
   BOOL CollectCrashFiles();
@@ -139,7 +130,6 @@ class CrashReporter {
   AssyncNotification m_Assync;             // Used for communication with the main thread.
   
   CString m_sZipName;                      // Name of the ZIP archive to send.
-  int m_Action;                            // Current assynchronous action.
   BOOL m_bExport;                          // If TRUE than export should be performed.
   CString m_sExportFileName;               // File name for exporting.
   BOOL m_bErrors;                          // TRUE if there were errors.
