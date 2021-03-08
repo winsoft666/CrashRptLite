@@ -1,0 +1,4 @@
+Source: crashreport
+Version: 1.1
+Description: Collecting technical information about the crash for your C++ program.
+Homepage: https://github.com/winsoft666/crashreport

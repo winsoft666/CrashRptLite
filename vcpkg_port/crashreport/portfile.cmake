@@ -1,0 +1,27 @@
+vcpkg_fail_port_install(ON_ARCH "arm" "arm64" ON_TARGET "UWP" "LINUX" "OSX")
+
+vcpkg_from_github(
+    OUT_SOURCE_PATH SOURCE_PATH
+    REPO winsoft666/crashreport
+    REF bc10697db92df634958580941a0bccaecd77f5dd
+    SHA512 7f7375bb1ad7a5873493899560871826667e7757d2030f0afdf25f054b9380031dc1400ef881ef1cc3162b7b3a566914ba20597926419466849c6f7fd1f8c331
+    HEAD_REF master
+)
+
+string(COMPARE EQUAL "${VCPKG_LIBRARY_LINKAGE}" "static" CRASHRPT_BUILD_STATIC_LIBS)
+
+vcpkg_configure_cmake(
+    SOURCE_PATH ${SOURCE_PATH}
+    OPTIONS
+        -DCRASHRPT_BUILD_STATIC_LIBS:BOOL=${CRASHRPT_BUILD_STATIC_LIBS}
+        -DBUILD_TESTS=OFF
+)
+
+vcpkg_install_cmake()
+
+
+file(INSTALL ${SOURCE_PATH}/LICENSE DESTINATION ${CURRENT_PACKAGES_DIR}/share/${PORT} RENAME copyright)
+file(REMOVE_RECURSE ${CURRENT_PACKAGES_DIR}/debug/include)
+file(REMOVE_RECURSE ${CURRENT_PACKAGES_DIR}/debug/share)
+
+vcpkg_copy_pdbs()
