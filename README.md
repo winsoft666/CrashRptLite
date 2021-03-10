@@ -3,7 +3,7 @@ crashreport is modified based on [crashrpt](http://crashrpt.sourceforge.net/).
 
 Update:
 - Removed UI and network transport part, only the crash information collecting remains.
-- Only support unicode.
+- Only support unicode charset.
 - Support high dpi screenshot(such as 4k screen).
 - Support installing with [vcpkg](https://github.com/microsoft/vcpkg).
 
