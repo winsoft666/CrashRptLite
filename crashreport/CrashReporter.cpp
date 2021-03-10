@@ -78,8 +78,7 @@ BOOL CrashReporter::InitLog() {
   _tcsftime(szDateTime, 64, _T("%Y%m%d-%H%M%S"), &timeinfo);
 
   CString sLogFile;
-  sLogFile.Format(_T("%s\\CrashRpt-Log-%s-{%s}.txt"), sLogDir, szDateTime,
-                  m_CrashInfo.GetReport(0)->GetCrashGUID());
+  sLogFile.Format(_T("%s\\CrashRpt-Log-%s-{%s}.txt"), sLogDir, szDateTime, m_CrashInfo.GetReport(0)->GetCrashGUID());
   m_Assync.InitLogFile(sLogFile);
 
   m_sCrashLogFile = sLogFile;
@@ -130,7 +129,6 @@ void CrashReporter::UnblockParentProcess() {
   if (hEvent != NULL)
     SetEvent(hEvent);  // Signal event
 }
-
 
 BOOL CrashReporter::DoWork() {
   // Reset the completion event
@@ -280,9 +278,8 @@ BOOL CrashReporter::TakeDesktopScreenshot() {
     type = SCREENSHOT_TYPE_VIRTUAL_SCREEN;
 
   // Take the screen shot
-  BOOL bTakeScreenshot = sc.TakeDesktopScreenshot(
-      m_CrashInfo.GetReport(m_nCurReport)->GetErrorReportDirName(), ssi, type,
-      m_CrashInfo.m_dwProcessId, fmt, m_CrashInfo.m_nJpegQuality, bGrayscale);
+  BOOL bTakeScreenshot =
+      sc.TakeDesktopScreenshot(m_CrashInfo.GetReport(m_nCurReport)->GetErrorReportDirName(), ssi, type, m_CrashInfo.m_dwProcessId, fmt, m_CrashInfo.m_nJpegQuality, bGrayscale);
   if (bTakeScreenshot == FALSE) {
     return FALSE;
   }
@@ -311,9 +308,7 @@ BOOL CrashReporter::TakeDesktopScreenshot() {
 }
 
 // This callback function is called by MinidumpWriteDump
-BOOL CALLBACK CrashReporter::MiniDumpCallback(PVOID CallbackParam,
-                                                   PMINIDUMP_CALLBACK_INPUT CallbackInput,
-                                                   PMINIDUMP_CALLBACK_OUTPUT CallbackOutput) {
+BOOL CALLBACK CrashReporter::MiniDumpCallback(PVOID CallbackParam, PMINIDUMP_CALLBACK_INPUT CallbackInput, PMINIDUMP_CALLBACK_OUTPUT CallbackOutput) {
   // Delegate back to the CErrorReportSender
   CrashReporter* pErrorReportSender = (CrashReporter*)CallbackParam;
   return pErrorReportSender->OnMinidumpProgress(CallbackInput, CallbackOutput);
@@ -321,8 +316,7 @@ BOOL CALLBACK CrashReporter::MiniDumpCallback(PVOID CallbackParam,
 
 // This method is called when MinidumpWriteDump notifies us about
 // currently performed action
-BOOL CrashReporter::OnMinidumpProgress(const PMINIDUMP_CALLBACK_INPUT CallbackInput,
-                                            PMINIDUMP_CALLBACK_OUTPUT CallbackOutput) {
+BOOL CrashReporter::OnMinidumpProgress(const PMINIDUMP_CALLBACK_INPUT CallbackInput, PMINIDUMP_CALLBACK_OUTPUT CallbackOutput) {
   switch (CallbackInput->CallbackType) {
     case CancelCallback: {
       // This callback allows to cancel minidump generation
@@ -343,8 +337,7 @@ BOOL CrashReporter::OnMinidumpProgress(const PMINIDUMP_CALLBACK_INPUT CallbackIn
       if (eri->GetExceptionAddress() != 0) {
         // Check if this is the module where exception has happened
         ULONG64 dwExcAddr = eri->GetExceptionAddress();
-        if (dwExcAddr >= CallbackInput->Module.BaseOfImage &&
-            dwExcAddr <= CallbackInput->Module.BaseOfImage + CallbackInput->Module.SizeOfImage) {
+        if (dwExcAddr >= CallbackInput->Module.BaseOfImage && dwExcAddr <= CallbackInput->Module.BaseOfImage + CallbackInput->Module.SizeOfImage) {
           // Save module information to the report
           eri->SetExceptionModule(CallbackInput->Module.FullPath);
           eri->SetExceptionModuleBase(CallbackInput->Module.BaseOfImage);
@@ -378,7 +371,6 @@ BOOL CrashReporter::OnMinidumpProgress(const PMINIDUMP_CALLBACK_INPUT CallbackIn
   return TRUE;
 }
 
-
 BOOL CrashReporter::CreateMiniDump() {
   if (m_CrashInfo.m_bGenerateMinidump == FALSE) {
     m_Assync.SetProgress(_T("Crash dump generation disabled; skipping."), 0, false);
@@ -390,13 +382,10 @@ BOOL CrashReporter::CreateMiniDump() {
   HANDLE hFile = NULL;
   MINIDUMP_EXCEPTION_INFORMATION mei;
   MINIDUMP_CALLBACK_INFORMATION mci;
-  CString sMinidumpFile =
-      m_CrashInfo.GetReport(m_nCurReport)->GetErrorReportDirName() + _T("\\crashdump.dmp");
+  CString sMinidumpFile = m_CrashInfo.GetReport(m_nCurReport)->GetErrorReportDirName() + _T("\\crashdump.dmp");
   std::vector<ERIFileItem> files_to_add;
   ERIFileItem fi;
   CString sErrorMsg;
-
-
 
   // Update progress
   m_Assync.SetProgress(_T("Creating crash dump file..."), 0, false);
@@ -420,8 +409,7 @@ BOOL CrashReporter::CreateMiniDump() {
   SetDumpPrivileges();
 
   // Create the minidump file
-  hFile =
-      CreateFile(sMinidumpFile, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+  hFile = CreateFile(sMinidumpFile, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 
   // Check if file has been created
   if (hFile == INVALID_HANDLE_VALUE) {
@@ -435,8 +423,7 @@ BOOL CrashReporter::CreateMiniDump() {
 
   // Set valid dbghelp API version
   typedef LPAPI_VERSION(WINAPI * LPIMAGEHLPAPIVERSIONEX)(LPAPI_VERSION AppVersion);
-  LPIMAGEHLPAPIVERSIONEX lpImagehlpApiVersionEx =
-      (LPIMAGEHLPAPIVERSIONEX)GetProcAddress(hDbgHelp, "ImagehlpApiVersionEx");
+  LPIMAGEHLPAPIVERSIONEX lpImagehlpApiVersionEx = (LPIMAGEHLPAPIVERSIONEX)GetProcAddress(hDbgHelp, "ImagehlpApiVersionEx");
   ATLASSERT(lpImagehlpApiVersionEx != NULL);
   if (lpImagehlpApiVersionEx != NULL) {
     API_VERSION CompiledApiVer;
@@ -459,15 +446,11 @@ BOOL CrashReporter::CreateMiniDump() {
   mci.CallbackRoutine = MiniDumpCallback;
   mci.CallbackParam = this;
 
-  typedef BOOL(WINAPI * LPMINIDUMPWRITEDUMP)(
-      HANDLE hProcess, DWORD ProcessId, HANDLE hFile, MINIDUMP_TYPE DumpType,
-      CONST PMINIDUMP_EXCEPTION_INFORMATION ExceptionParam,
-      CONST PMINIDUMP_USER_STREAM_INFORMATION UserEncoderParam,
-      CONST PMINIDUMP_CALLBACK_INFORMATION CallbackParam);
+  typedef BOOL(WINAPI * LPMINIDUMPWRITEDUMP)(HANDLE hProcess, DWORD ProcessId, HANDLE hFile, MINIDUMP_TYPE DumpType, CONST PMINIDUMP_EXCEPTION_INFORMATION ExceptionParam,
+                                             CONST PMINIDUMP_USER_STREAM_INFORMATION UserEncoderParam, CONST PMINIDUMP_CALLBACK_INFORMATION CallbackParam);
 
   // Get address of MiniDumpWirteDump function
-  LPMINIDUMPWRITEDUMP pfnMiniDumpWriteDump =
-      (LPMINIDUMPWRITEDUMP)GetProcAddress(hDbgHelp, "MiniDumpWriteDump");
+  LPMINIDUMPWRITEDUMP pfnMiniDumpWriteDump = (LPMINIDUMPWRITEDUMP)GetProcAddress(hDbgHelp, "MiniDumpWriteDump");
   if (!pfnMiniDumpWriteDump) {
     m_Assync.SetProgress(_T("Bad MiniDumpWriteDump function."), 0, false);
     sErrorMsg = _T("Bad MiniDumpWriteDump function");
@@ -478,8 +461,7 @@ BOOL CrashReporter::CreateMiniDump() {
   HANDLE hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, m_CrashInfo.m_dwProcessId);
 
   // Now actually write the minidump
-  BOOL bWriteDump = pfnMiniDumpWriteDump(hProcess, m_CrashInfo.m_dwProcessId, hFile,
-                                         m_CrashInfo.m_MinidumpType, &mei, NULL, &mci);
+  BOOL bWriteDump = pfnMiniDumpWriteDump(hProcess, m_CrashInfo.m_dwProcessId, hFile, m_CrashInfo.m_MinidumpType, &mei, NULL, &mci);
 
   // Check result
   if (!bWriteDump) {
@@ -542,8 +524,7 @@ BOOL CrashReporter::SetDumpPrivileges() {
   TokenPrivileges.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
 
   //Add privileges here.
-  if (!AdjustTokenPrivileges(TokenHandle, FALSE, &TokenPrivileges, sizeof(TokenPrivileges), NULL,
-                             NULL)) {
+  if (!AdjustTokenPrivileges(TokenHandle, FALSE, &TokenPrivileges, sizeof(TokenPrivileges), NULL, NULL)) {
     m_Assync.SetProgress(_T("SetDumpPrivileges: Could not revoke the debug privilege"), 0);
     goto Cleanup;
   }
@@ -691,8 +672,7 @@ BOOL CrashReporter::CreateCrashDescriptionXML(CErrorReportInfo& eri) {
       sNum.Format(_T("%d"), mi.m_rcMonitor.Height());
       hMonitor.ToElement()->SetAttribute("height", strconv.t2utf8(sNum));
 
-      hMonitor.ToElement()->SetAttribute("file",
-                                         strconv.t2utf8(Utility::GetFileName(mi.m_sFileName)));
+      hMonitor.ToElement()->SetAttribute("file", strconv.t2utf8(Utility::GetFileName(mi.m_sFileName)));
 
       hMonitors.ToElement()->LinkEndChild(hMonitor.ToNode());
     }
@@ -909,8 +889,7 @@ BOOL CrashReporter::CollectSingleFile(ERIFileItem* pfi) {
   CString sErrorReportDir = m_CrashInfo.GetReport(m_nCurReport)->GetErrorReportDirName();
 
   // Open source file with read/write sharing permissions.
-  hSrcFile = CreateFile(pfi->m_sSrcFile, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL,
-                        OPEN_EXISTING, 0, NULL);
+  hSrcFile = CreateFile(pfi->m_sSrcFile, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
   if (hSrcFile == INVALID_HANDLE_VALUE) {
     pfi->m_sErrorStatus = Utility::FormatErrorMsg(GetLastError());
     str.Format(_T("Error opening file %s."), pfi->m_sSrcFile);
@@ -988,8 +967,7 @@ cleanup:
   return bStatus;
 }
 
-BOOL CrashReporter::CollectFilesBySearchTemplate(ERIFileItem* pfi,
-                                                      std::vector<ERIFileItem>& file_list) {
+BOOL CrashReporter::CollectFilesBySearchTemplate(ERIFileItem* pfi, std::vector<ERIFileItem>& file_list) {
   CString sMsg;
   sMsg.Format(_T("Looking for files using search template: %s"), pfi->m_sSrcFile);
   m_Assync.SetProgress(sMsg, 0);
@@ -1159,8 +1137,7 @@ int CrashReporter::DumpRegKey(HKEY hParentKey, CString sSubKey, TiXmlElement* el
         DWORD dwValues = 0;
         DWORD dwMaxValueNameLen = 0;
         DWORD dwMaxValueLen = 0;
-        LONG lResult = RegQueryInfoKey(hKey, NULL, 0, 0, &dwSubKeys, &dwMaxSubKey, 0, &dwValues,
-                                       &dwMaxValueNameLen, &dwMaxValueLen, NULL, NULL);
+        LONG lResult = RegQueryInfoKey(hKey, NULL, 0, 0, &dwSubKeys, &dwMaxSubKey, 0, &dwValues, &dwMaxValueNameLen, &dwMaxValueLen, NULL, NULL);
         if (lResult == ERROR_SUCCESS) {
           // Enumerate and dump subkeys
           int i;
@@ -1323,14 +1300,11 @@ BOOL CrashReporter::RestartApp() {
   }
   else {
     // Format with double quotes to avoid first empty parameters
-    sCmdLine.Format(_T("\"%s\" %s"), m_CrashInfo.GetReport(m_nCurReport)->GetImageName(),
-                    m_CrashInfo.m_sRestartCmdLine.GetBuffer(0));
+    sCmdLine.Format(_T("\"%s\" %s"), m_CrashInfo.GetReport(m_nCurReport)->GetImageName(), m_CrashInfo.m_sRestartCmdLine.GetBuffer(0));
   }
 
   // Create process using the command line prepared earlier
-  BOOL bCreateProcess =
-      CreateProcess(m_CrashInfo.GetReport(m_nCurReport)->GetImageName(), sCmdLine.GetBuffer(0),
-                    NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi);
+  BOOL bCreateProcess = CreateProcess(m_CrashInfo.GetReport(m_nCurReport)->GetImageName(), sCmdLine.GetBuffer(0), NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi);
 
   // The following is to avoid a handle leak
   if (pi.hProcess) {
@@ -1450,9 +1424,7 @@ BOOL CrashReporter::CompressReportFiles(CErrorReportInfo* eri) {
     info.internal_fa = FILE_ATTRIBUTE_NORMAL;
 
     // Create new file inside of our ZIP archive
-    int n =
-        zipOpenNewFileInZip(hZip, (const char*)strconv.t2a(sDstFileName.GetBuffer(0)), &info, NULL,
-                            0, NULL, 0, strconv.t2a(sDesc), Z_DEFLATED, Z_DEFAULT_COMPRESSION);
+    int n = zipOpenNewFileInZip(hZip, (const char*)strconv.t2a(sDstFileName.GetBuffer(0)), &info, NULL, 0, NULL, 0, strconv.t2a(sDesc), Z_DEFLATED, Z_DEFAULT_COMPRESSION);
     if (n != 0) {
       sMsg.Format(_T("Couldn't compress file %s"), sDstFileName);
       m_Assync.SetProgress(sMsg, 0, false);
@@ -1548,7 +1520,6 @@ int CrashReporter::TerminateAllCrashReportProcesses() {
   // wants to shutdown all crash sender processes running in background
   // to replace the locked files.
 
-
   CString sProcessName;
   sProcessName.Format(_T("CrashReport.exe"));
 
@@ -1562,8 +1533,7 @@ int CrashReporter::TerminateAllCrashReportProcesses() {
     // Walk through processes
     while (Process32Next(snapshot, &entry) == TRUE) {
       // Compare process name
-      if (_tcsicmp(entry.szExeFile, sProcessName) == 0 &&
-          entry.th32ProcessID != GetCurrentProcessId()) {
+      if (_tcsicmp(entry.szExeFile, sProcessName) == 0 && entry.th32ProcessID != GetCurrentProcessId()) {
         // Open process handle
         HANDLE hProcess = OpenProcess(PROCESS_TERMINATE, FALSE, entry.th32ProcessID);
 

@@ -107,22 +107,19 @@
 *     process exits and check the exit code. When the handle is not needed anymore, release it with the CloseHandle() function.
 */
 typedef struct tagCR_EXCEPTION_INFO {
-  WORD cb;  // Size of this structure in bytes; should be initialized before using.
+  WORD cb;                       // Size of this structure in bytes; should be initialized before using.
   PEXCEPTION_POINTERS pexcptrs;  // Exception pointers.
   int exctype;                   // Exception type.
   DWORD code;                    // Code of SEH exception.
-  unsigned int fpe_subcode;      // Floating point exception sub-code.
-  const wchar_t* expression;     // Assertion expression.
-  const wchar_t* function;       // Function in which assertion happened.
-  const wchar_t* file;           // File in which assertion happened.
-  unsigned int line;             // Line number.
+  DWORD fpe_subcode;             // Floating point exception sub-code.
+  LPCWSTR expression;            // Assertion expression.
+  LPCWSTR function;              // Function in which assertion happened.
+  LPCWSTR file;                  // File in which assertion happened.
+  DWORD line;                    // Line number.
   BOOL bManual;                  // Flag telling if the error report is generated manually or not.
   HANDLE hCrashReportProcess;    // Handle to the CrashReport.exe process.
 } CR_EXCEPTION_INFO;
 typedef CR_EXCEPTION_INFO* PCR_EXCEPTION_INFO;
-
-
-
 
 // Stages of crash report generation (used by the crash callback function).
 #define CR_CB_STAGE_PREPARE 10  // Stage after exception pointers've been retrieved.
@@ -163,27 +160,14 @@ typedef CR_EXCEPTION_INFO* PCR_EXCEPTION_INFO;
 *    to true if it wants to continue its execution after crash report generation 
 *    (otherwise the program will be terminated).
 */
-typedef struct tagCR_CRASH_CALLBACK_INFOW {
+typedef struct tagCR_CRASH_CALLBACK_INFO {
   WORD cb;                            // Size of this structure in bytes.
   int nStage;                         // Stage.
   LPCWSTR pszErrorReportFolder;       // Directory where crash report files are located.
   CR_EXCEPTION_INFO* pExceptionInfo;  // Pointer to information about the crash.
   LPVOID pUserParam;                  // Pointer to user-defined data.
   BOOL bContinueExecution;            // Whether to terminate the process (the default) or to continue program execution.
-} CR_CRASH_CALLBACK_INFOW;
-
-typedef struct tagCR_CRASH_CALLBACK_INFOA {
-  WORD cb;
-  int nStage;
-  LPCSTR pszErrorReportFolder;
-  CR_EXCEPTION_INFO* pExceptionInfo;
-  LPVOID pUserParam;
-  BOOL bContinueExecution;
-} CR_CRASH_CALLBACK_INFOA;
-
-
-
-
+} CR_CRASH_CALLBACK_INFO;
 
 // Constants that may be returned by the crash callback function.
 #define CR_CB_CANCEL 0             // Cancel crash report generation on the current stage.
@@ -262,16 +246,7 @@ typedef struct tagCR_CRASH_CALLBACK_INFOA {
 *     return CR_CB_NOTIFY_NEXT_STAGE;
 *  }
 */
-typedef int(CALLBACK* PFNCRASHCALLBACKW)(CR_CRASH_CALLBACK_INFOW* pInfo);
-typedef int(CALLBACK* PFNCRASHCALLBACKA)(CR_CRASH_CALLBACK_INFOA* pInfo);
-
-#ifdef UNICODE
-typedef CR_CRASH_CALLBACK_INFOW CR_CRASH_CALLBACK_INFO;
-typedef PFNCRASHCALLBACKW PFNCRASHCALLBACK;
-#else
-typedef PFNCRASHCALLBACKA PFNCRASHCALLBACK;
-typedef CR_CRASH_CALLBACK_INFOA CR_CRASH_CALLBACK_INFO;
-#endif  // UNICODE
+typedef int(CALLBACK* PFNCRASHCALLBACK)(CR_CRASH_CALLBACK_INFO* pInfo);
 
 /* Sets the crash callback function.
 *  This function returns zero if succeeded. Use crGetLastErrorMsg() to retrieve the error message on fail.
@@ -279,34 +254,30 @@ typedef CR_CRASH_CALLBACK_INFOA CR_CRASH_CALLBACK_INFO;
 *  [in] pfnCallbackFunc  Pointer to the crash callback function.
 *  [in] lpParam          User defined parameter. Optional. 
 */
-CRASHRPTAPI(int) crSetCrashCallbackW(PFNCRASHCALLBACKW pfnCallbackFunc, LPVOID lpParam);
-CRASHRPTAPI(int) crSetCrashCallbackA(PFNCRASHCALLBACKA pfnCallbackFunc, LPVOID lpParam);
-
-
-
+CRASHRPTAPI(int) crSetCrashCallback(PFNCRASHCALLBACK pfnCallbackFunc, LPVOID lpParam);
 
 // Flags for CR_INSTALL_INFO::dwFlags
-#define CR_INST_SEH_EXCEPTION_HANDLER 0x1  // Install SEH handler.
-#define CR_INST_TERMINATE_HANDLER 0x2      // Install terminate handler.
-#define CR_INST_UNEXPECTED_HANDLER 0x4     // Install unexpected handler.
-#define CR_INST_PURE_CALL_HANDLER 0x8      // Install pure call handler (VS .NET and later).
-#define CR_INST_NEW_OPERATOR_ERROR_HANDLER 0x10 // Install new operator error handler (VS .NET and later).
-#define CR_INST_SECURITY_ERROR_HANDLER 0x20     // Install security error handler (VS .NET and later).
-#define CR_INST_INVALID_PARAMETER_HANDLER 0x40  // Install invalid parameter handler (VS 2005 and later).
-#define CR_INST_SIGABRT_HANDLER 0x80    // Install SIGABRT signal handler.
-#define CR_INST_SIGFPE_HANDLER 0x100    // Install SIGFPE signal handler.
-#define CR_INST_SIGILL_HANDLER 0x200    // Install SIGILL signal handler.
-#define CR_INST_SIGINT_HANDLER 0x400    // Install SIGINT signal handler.
-#define CR_INST_SIGSEGV_HANDLER 0x800   // Install SIGSEGV signal handler.
-#define CR_INST_SIGTERM_HANDLER 0x1000  // Install SIGTERM signal handler.
+#define CR_INST_SEH_EXCEPTION_HANDLER 0x1        // Install SEH handler.
+#define CR_INST_TERMINATE_HANDLER 0x2            // Install terminate handler.
+#define CR_INST_UNEXPECTED_HANDLER 0x4           // Install unexpected handler.
+#define CR_INST_PURE_CALL_HANDLER 0x8            // Install pure call handler (VS .NET and later).
+#define CR_INST_NEW_OPERATOR_ERROR_HANDLER 0x10  // Install new operator error handler (VS .NET and later).
+#define CR_INST_SECURITY_ERROR_HANDLER 0x20      // Install security error handler (VS .NET and later).
+#define CR_INST_INVALID_PARAMETER_HANDLER 0x40   // Install invalid parameter handler (VS 2005 and later).
+#define CR_INST_SIGABRT_HANDLER 0x80             // Install SIGABRT signal handler.
+#define CR_INST_SIGFPE_HANDLER 0x100             // Install SIGFPE signal handler.
+#define CR_INST_SIGILL_HANDLER 0x200             // Install SIGILL signal handler.
+#define CR_INST_SIGINT_HANDLER 0x400             // Install SIGINT signal handler.
+#define CR_INST_SIGSEGV_HANDLER 0x800            // Install SIGSEGV signal handler.
+#define CR_INST_SIGTERM_HANDLER 0x1000           // Install SIGTERM signal handler.
 
-#define CR_INST_ALL_POSSIBLE_HANDLERS 0x1FFF  // Install all possible exception handlers.
-#define CR_INST_CRT_EXCEPTION_HANDLERS 0x1FFE // Install exception handlers for the linked CRT module.
+#define CR_INST_ALL_POSSIBLE_HANDLERS 0x1FFF   // Install all possible exception handlers.
+#define CR_INST_CRT_EXCEPTION_HANDLERS 0x1FFE  // Install exception handlers for the linked CRT module.
 
 #define CR_INST_NO_GUI 0x2000  //!< Do not show GUI, send report silently (use for non-GUI apps only).
 
-#define CR_INST_APP_RESTART 0x10000  // Restart the application on crash.
-#define CR_INST_NO_MINIDUMP 0x20000  // Do not include minidump file to crash report.
+#define CR_INST_APP_RESTART 0x10000            // Restart the application on crash.
+#define CR_INST_NO_MINIDUMP 0x20000            // Do not include minidump file to crash report.
 #define CR_INST_STORE_ZIP_ARCHIVES 0x80000     // CrashRpt should store both uncompressed error report files and ZIP archives.
 #define CR_INST_AUTO_THREAD_HANDLERS 0x800000  // If this flag is set, installs exception handlers for newly created threads automatically.
 
@@ -407,45 +378,28 @@ CRASHRPTAPI(int) crSetCrashCallbackA(PFNCRASHCALLBACKA pfnCallbackFunc, LPVOID l
 *     This parameter defines the timeout (in seconds) for the application restart (when using CR_INST_APP_RESTART flag). 
 *     It is recommended to set this with zero (in such a case, the default restart timeout of 60 seconds is applied). 
 */
-typedef struct tagCR_INSTALL_INFOW {
-  WORD cb;                  // Size of this structure in bytes; must be initialized before using!
-  LPCWSTR pszAppName;       // Name of application.
-  LPCWSTR pszAppVersion;    // Application version.
-  LPCWSTR pszCrashReportPath;     // Directory name where CrashReport.exe is located.
-  UINT uPriorities[5];            // Array of error sending transport priorities.
-  DWORD dwFlags;                  // Flags.
-  LPCWSTR pszDebugHelpDLL;        // File name or folder of Debug help DLL.
-  MINIDUMP_TYPE uMiniDumpType;    // Mini-dump type.
-  LPCWSTR pszErrorReportSaveDir;  // Directory where to save error reports.
-  LPCWSTR pszRestartCmdLine;      // Command line for application restart (without executable name).
+typedef struct tagCR_INSTALL_INFO {
+  WORD cb;                           // Size of this structure in bytes; must be initialized before using!
+  LPCWSTR pszAppName;                // Name of application.
+  LPCWSTR pszAppVersion;             // Application version.
+  LPCWSTR pszCrashReportPath;        // CrashReport.exe full path included file name.
+  UINT uPriorities[5];               // Array of error sending transport priorities.
+  DWORD dwFlags;                     // Flags.
+  LPCWSTR pszDebugHelpDLLPath;       // dbghelp.dll full path included file name.
+  MINIDUMP_TYPE uMiniDumpType;       // Mini-dump type.
+  LPCWSTR pszErrorReportSaveDir;     // Directory where to save error reports.
+  LPCWSTR pszRestartCmdLine;         // Command line for application restart (without executable name).
   LPCWSTR pszCustomCrashReportIcon;  // Custom icon used for Error Report dialog.
   int nRestartTimeout;               // Timeout for application restart.
-} CR_INSTALL_INFOW;
+} CR_INSTALL_INFO;
 
-typedef struct tagCR_INSTALL_INFOA {
-  WORD cb;
-  LPCSTR pszAppName;
-  LPCSTR pszAppVersion;
-  LPCSTR pszCrashReportPath;
-  UINT uPriorities[5];
-  DWORD dwFlags;
-  LPCSTR pszDebugHelpDLL;
-  MINIDUMP_TYPE uMiniDumpType;
-  LPCSTR pszErrorReportSaveDir;
-  LPCSTR pszRestartCmdLine;
-  LPCSTR pszCustomCrashReportIcon;
-  int nRestartTimeout;
-} CR_INSTALL_INFOA;
-
-typedef CR_INSTALL_INFOW* PCR_INSTALL_INFOW;
-typedef CR_INSTALL_INFOA* PCR_INSTALL_INFOA;
-
+typedef CR_INSTALL_INFO* PCR_INSTALL_INFO;
 
 /*
 *  Installs exception handlers for the caller process.
 *  This function returns zero if succeeded.
 *
-*  [in] pInfo General congiration information.
+*  [in] pInfo General configuration information.
 *
 *  remarks:
 *    This function installs unhandled exception filter for the caller process.
@@ -480,9 +434,7 @@ typedef CR_INSTALL_INFOA* PCR_INSTALL_INFOA;
 *
 *    If this function fails, use crGetLastErrorMsg() to retrieve the error message.
 */
-CRASHRPTAPI(int) crInstallW(__in PCR_INSTALL_INFOW pInfo);
-CRASHRPTAPI(int) crInstallA(__in PCR_INSTALL_INFOA pInfo);
-
+CRASHRPTAPI(int) crInstall(__in PCR_INSTALL_INFO pInfo);
 
 /*
 * Uninitializes the CrashRpt library and unsinstalls exception handlers previously installed with crInstall().
@@ -497,7 +449,6 @@ CRASHRPTAPI(int) crInstallA(__in PCR_INSTALL_INFOA pInfo);
 *    When this function fails, use the crGetLastErrorMsg() function to retrieve the error message.
 */
 CRASHRPTAPI(int) crUninstall();
-
 
 /*
 * Installs exception handlers to the caller thread. This function returns zero if succeeded.
@@ -534,7 +485,6 @@ CRASHRPTAPI(int) crUninstall();
 */
 CRASHRPTAPI(int) crInstallToCurrentThread(DWORD dwFlags);
 
-
 /*
 * Uninstalls C++ exception handlers from the current thread. This function returns zero if succeeded.
 *  
@@ -553,16 +503,11 @@ CRASHRPTAPI(int) crInstallToCurrentThread(DWORD dwFlags);
 */
 CRASHRPTAPI(int) crUninstallFromCurrentThread();
 
-
-
-
-
-
 // Flags for crAddFile() function.
 #define CR_AF_TAKE_ORIGINAL_FILE 0  // Take the original file (do not copy it to the error report folder).
 #define CR_AF_FILE_MUST_EXIST 0     // Function will fail if file doesn't exist at the moment of function call.
-#define CR_AF_MAKE_FILE_COPY 1  // Copy the file to the error report folder.
-#define CR_AF_MISSING_FILE_OK 2  // Do not fail if file is missing (assume it will be created later).
+#define CR_AF_MAKE_FILE_COPY 1      // Copy the file to the error report folder.
+#define CR_AF_MISSING_FILE_OK 2     // Do not fail if file is missing (assume it will be created later).
 
 /*
 * Adds a file to crash report. This function returns zero if succeeded.
@@ -596,10 +541,7 @@ CRASHRPTAPI(int) crUninstallFromCurrentThread();
 *    This function fails if pszFile doesn't exist at the moment of function call, unless you specify CR_AF_MISSING_FILE_OK flag. 
 */
 
-CRASHRPTAPI(int) crAddFileW(LPCWSTR pszFile, LPCWSTR pszDestFile, LPCWSTR pszDesc, DWORD dwFlags);
-CRASHRPTAPI(int) crAddFileA(LPCSTR pszFile, LPCSTR pszDestFile, LPCSTR pszDesc, DWORD dwFlags);
-
-
+CRASHRPTAPI(int) crAddFile(LPCWSTR pszFile, LPCWSTR pszDestFile, LPCWSTR pszDesc, DWORD dwFlags);
 
 // Flags for crAddScreenshot function.
 #define CR_AS_VIRTUAL_SCREEN 0   // Take a screenshot of the virtual screen.
@@ -607,7 +549,6 @@ CRASHRPTAPI(int) crAddFileA(LPCSTR pszFile, LPCSTR pszDestFile, LPCSTR pszDesc, 
 #define CR_AS_PROCESS_WINDOWS 2  // Take a screenshot of all visible process windows.
 #define CR_AS_GRAYSCALE_IMAGE 4  // Make a grayscale image instead of a full-color one.
 #define CR_AS_USE_JPEG_FORMAT 8  // Store screenshots as JPG files.
-
 
 /*
 * Adds a screenshot to the crash report.
@@ -641,7 +582,7 @@ CRASHRPTAPI(int) crAddFileA(LPCSTR pszFile, LPCSTR pszDestFile, LPCSTR pszDesc, 
 *  If you use PNG file format, this parameter is ignored.
 *
 *  In addition, you can specify the CR_AS_GRAYSCALE_IMAGE flag to make a grayscale screenshot (by default color image is made). 
-*  Grayscale image gives smaller file size.
+*  Gray scale image gives smaller file size.
 *
 *  When capturing entire desktop consisting of several monitors, one screenshot file is added per each monitor. 
 *
@@ -649,8 +590,6 @@ CRASHRPTAPI(int) crAddFileA(LPCSTR pszFile, LPCSTR pszDestFile, LPCSTR pszDesc, 
 *  or private information. Always specify purposes you will use collected information for in your Privacy Policy. 
 */
 CRASHRPTAPI(int) crAddScreenshot(DWORD dwFlags, int nJpegQuality);
-
-
 
 /*
 * Adds a string property to the crash report. 
@@ -665,10 +604,7 @@ CRASHRPTAPI(int) crAddScreenshot(DWORD dwFlags, int nJpegQuality);
 *  User-added properties are listed under \<CustomProps\> tag of the XML file.
 *  In the XML file properties are ordered by names in alphabetic order.
 */
-CRASHRPTAPI(int) crAddPropertyW(LPCWSTR pszPropName, LPCWSTR pszPropValue);
-CRASHRPTAPI(int) crAddPropertyA(LPCSTR pszPropName, LPCSTR pszPropValue);
-
-
+CRASHRPTAPI(int) crAddProperty(LPCWSTR pszPropName, LPCWSTR pszPropValue);
 
 /*
 * Adds a registry key dump to the crash report.
@@ -691,10 +627,7 @@ CRASHRPTAPI(int) crAddPropertyA(LPCSTR pszPropName, LPCSTR pszPropValue);
 *
 *  The dwFlags parameter can be set to zero.
 */
-CRASHRPTAPI(int) crAddRegKeyW(LPCWSTR pszRegKey, LPCWSTR pszDstFileName, DWORD dwFlags);
-CRASHRPTAPI(int) crAddRegKeyA(LPCSTR pszRegKey, LPCSTR pszDstFileName, DWORD dwFlags);
-
-
+CRASHRPTAPI(int) crAddRegKey(LPCWSTR pszRegKey, LPCWSTR pszDstFileName, DWORD dwFlags);
 
 /*
 * Manually generates an error report.
@@ -734,9 +667,6 @@ CRASHRPTAPI(int) crAddRegKeyA(LPCSTR pszRegKey, LPCSTR pszDstFileName, DWORD dwF
 */
 CRASHRPTAPI(int) crGenerateErrorReport(__in_opt CR_EXCEPTION_INFO* pExceptionInfo);
 
-
-
-
 /*
 * Can be used as a SEH exception filter.
 * This function returns EXCEPTION_EXECUTE_HANDLER if succeeds; otherwise EXCEPTION_CONTINUE_SEARCH.
@@ -768,9 +698,6 @@ CRASHRPTAPI(int) crGenerateErrorReport(__in_opt CR_EXCEPTION_INFO* pExceptionInf
 *     }
 */
 CRASHRPTAPI(int) crExceptionFilter(unsigned int code, __in_opt struct _EXCEPTION_POINTERS* ep);
-
-
-
 
 // Flags used by crEmulateCrash() function
 #define CR_NONCONTINUABLE_EXCEPTION 32  // Non continuable software exception.
@@ -822,8 +749,6 @@ CRASHRPTAPI(int) crExceptionFilter(unsigned int code, __in_opt struct _EXCEPTION
 
 CRASHRPTAPI(int) crEmulateCrash(unsigned ExceptionType) throw(...);
 
-
-
 /*
 * Gets the last CrashRpt error message.
 * This function returns length of error message in characters. If output buffer is invalid, returns a negative number.
@@ -837,21 +762,14 @@ CRASHRPTAPI(int) crEmulateCrash(unsigned ExceptionType) throw(...);
 *
 *    If buffer is too small for the error message, the message is truncated.
 */
-CRASHRPTAPI(int) crGetLastErrorMsgW(__out_ecount_z(uBuffSize) LPWSTR pszBuffer, UINT uBuffSize);
-CRASHRPTAPI(int) crGetLastErrorMsgA(__out_ecount_z(uBuffSize) LPSTR pszBuffer, UINT uBuffSize);
-
-
-
+CRASHRPTAPI(int) crGetLastErrorMsg(__out_ecount_z(uBuffSize) LPWSTR pszBuffer, UINT uBuffSize);
 
 // Helper wrapper classes
 #ifndef _CRASHRPT_NO_WRAPPERS
 class CrAutoInstallHelper {
  public:
   //! Installs exception handlers to the caller process
-  CrAutoInstallHelper(__in PCR_INSTALL_INFOA pInfo) { m_nInstallStatus = crInstallA(pInfo); }
-
-  //! Installs exception handlers to the caller process
-  CrAutoInstallHelper(__in PCR_INSTALL_INFOW pInfo) { m_nInstallStatus = crInstallW(pInfo); }
+  CrAutoInstallHelper(__in PCR_INSTALL_INFO pInfo) { m_nInstallStatus = crInstall(pInfo); }
 
   //! Uninstalls exception handlers from the caller process
   ~CrAutoInstallHelper() {
@@ -866,11 +784,9 @@ class CrAutoInstallHelper {
 class CrThreadAutoInstallHelper {
  public:
   //! Installs exception handlers to the caller thread
-  CrThreadAutoInstallHelper(DWORD dwFlags = 0) {
-    m_nInstallStatus = crInstallToCurrentThread(dwFlags);
-  }
+  CrThreadAutoInstallHelper(DWORD dwFlags = 0) { m_nInstallStatus = crInstallToCurrentThread(dwFlags); }
 
-  //! Uninstalls exception handlers from the caller thread
+  //! Uninstall exception handlers from the caller thread
   ~CrThreadAutoInstallHelper() {
     if (m_nInstallStatus == 0)
       crUninstallFromCurrentThread();
@@ -881,26 +797,4 @@ class CrThreadAutoInstallHelper {
 };
 
 #endif  //!_CRASHRPT_NO_WRAPPERS
-
-
-#ifdef UNICODE
-typedef CR_INSTALL_INFOW CR_INSTALL_INFO;
-typedef PCR_INSTALL_INFOW PCR_INSTALL_INFO;
-#define crInstall crInstallW
-#define crAddFile crAddFileW
-#define crAddProperty crAddPropertyW
-#define crAddRegKey crAddRegKeyW
-#define crGetLastErrorMsg crGetLastErrorMsgW
-#define crSetCrashCallback crSetCrashCallbackW
-#else
-typedef CR_INSTALL_INFOA CR_INSTALL_INFO;
-typedef PCR_INSTALL_INFOA PCR_INSTALL_INFO;
-#define crInstall crInstallA
-#define crAddFile crAddFileA
-#define crAddProperty crAddPropertyA
-#define crAddRegKey crAddRegKeyA
-#define crGetLastErrorMsg crGetLastErrorMsgA
-#define crSetCrashCallback crSetCrashCallbackA
-#endif
-
 #endif  //_CRASHRPT_H_

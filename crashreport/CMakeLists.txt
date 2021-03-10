@@ -1,3 +1,4 @@
+cmake_minimum_required (VERSION 3.16)
 project(crashreport)
 
 # Create the list of source files
@@ -41,5 +42,7 @@ set_target_properties(crashreport PROPERTIES COMPILE_FLAGS "/Os")
 set_target_properties(crashreport PROPERTIES 
 				DEBUG_POSTFIX d)
         
+set_property(TARGET crashreport PROPERTY VS_DPI_AWARE "PerMonitor")
+
 install(TARGETS crashreport
 	RUNTIME DESTINATION tools)

@@ -36,8 +36,7 @@ BOOL CSharedMem::Init(LPCTSTR szName, BOOL bOpenExisting, ULONG64 uSize) {
   if (!bOpenExisting) {
     ULARGE_INTEGER i;
     i.QuadPart = uSize;
-    m_hFileMapping =
-        CreateFileMapping(INVALID_HANDLE_VALUE, 0, PAGE_READWRITE, i.HighPart, i.LowPart, szName);
+    m_hFileMapping = CreateFileMapping(INVALID_HANDLE_VALUE, 0, PAGE_READWRITE, i.HighPart, i.LowPart, szName);
   }
   else {
     m_hFileMapping = OpenFileMapping(FILE_MAP_READ | FILE_MAP_WRITE, FALSE, szName);
@@ -98,8 +97,7 @@ LPBYTE CSharedMem::CreateView(DWORD dwOffset, DWORD dwLength) {
   DWORD dwDiff = dwOffset - dwBaseOffs;
   LPBYTE pPtr = NULL;
 
-  pPtr = (LPBYTE)MapViewOfFile(m_hFileMapping, FILE_MAP_READ | FILE_MAP_WRITE, 0, dwBaseOffs,
-                               dwLength + dwDiff);
+  pPtr = (LPBYTE)MapViewOfFile(m_hFileMapping, FILE_MAP_READ | FILE_MAP_WRITE, 0, dwBaseOffs, dwLength + dwDiff);
   m_aViewStartPtrs[pPtr + dwDiff] = pPtr;
 
   return (pPtr + dwDiff);

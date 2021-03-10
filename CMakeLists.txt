@@ -1,5 +1,5 @@
 # Preserve backwards compatibility
-cmake_minimum_required (VERSION 2.8)
+cmake_minimum_required (VERSION 3.16)
 
 set(CMAKE_CONFIGURATION_TYPES Debug Release CACHE TYPE INTERNAL FORCE )
 
@@ -12,8 +12,8 @@ project (crashreport)
 #endif(NOT MSVC OR ${MSVC_VERSION} LESS 1400)
 
 # Build options
-option(CRASHRPT_BUILD_STATIC_LIBS "If set (default), CrashReport modules are built as static-link libraries, otherwise as static libs." ON)
-option(BUILD_TESTS "Build tests project" OFF)
+option(CRASHRPT_BUILD_STATIC_LIBS "If set (default), CrashReport modules are built as static-link libraries, otherwise as static libs." OFF)
+option(BUILD_TESTS "Build tests project" ON)
 
 # Set output directory for executable files
 if(CMAKE_CL_64)

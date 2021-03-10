@@ -1,3 +1,4 @@
+cmake_minimum_required (VERSION 3.16)
 project(MFCDemo)
 
 # Create the list of source files
@@ -38,3 +39,5 @@ target_link_libraries(MFCDemo libcrashrpt)
 
 # Add "d" postfix to output file name in Debug
 set_target_properties(MFCDemo PROPERTIES DEBUG_POSTFIX d )
+
+set_property(TARGET MFCDemo PROPERTY VS_DPI_AWARE "PerMonitor")

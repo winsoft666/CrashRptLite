@@ -24,7 +24,7 @@ struct ThreadExceptionHandlers {
 };
 
 // Sets the last error message (for the caller thread).
-int crSetErrorMsg(PTSTR pszErrorMsg);
+int crSetErrorMsg(PWSTR pszErrorMsg);
 
 // This structure describes a file item (a file included into crash report).
 struct FileItem {
@@ -37,11 +37,10 @@ struct FileItem {
   CString m_sDstFileName;  // Destination file name (as seen in ZIP archive).
   CString m_sDescription;  // Description.
   BOOL m_bMakeCopy;        // Should we make a copy of this file on crash?
-      // If set, the file will be copied to crash report folder and that copy will be included into crash report,
-      // otherwise the file will be included from its original location (not guaranteing that file is the same it was
-      // at the moment of crash).
-  BOOL
-      m_bAllowDelete;  // Whether to allow user deleting the file from context menu of Error Report Details dialog.
+                           // If set, the file will be copied to crash report folder and that copy will be included into crash report,
+                           // otherwise the file will be included from its original location (not guaranteing that file is the same it was
+                           // at the moment of crash).
+  BOOL m_bAllowDelete;     // Whether to allow user deleting the file from context menu of Error Report Details dialog.
 };
 
 // Contains information about a registry key included into a crash report.
@@ -49,7 +48,7 @@ struct RegKeyInfo {
   RegKeyInfo() { m_bAllowDelete = false; }
 
   CString m_sDstFileName;  // Destination file name (as seen in ZIP archive).
-  bool m_bAllowDelete;  // Whether to allow user deleting the file from context menu of Error Report Details dialog.
+  bool m_bAllowDelete;     // Whether to allow user deleting the file from context menu of Error Report Details dialog.
 };
 
 // This class is used to set exception handlers, catch exceptions
@@ -63,16 +62,16 @@ class CCrashHandler {
   virtual ~CCrashHandler();
 
   // Initializes the crash handler object.
-  int Init(__in_opt LPCTSTR lpcszAppName = NULL,
-           __in_opt LPCTSTR lpcszAppVersion = NULL,
-           __in_opt LPCTSTR lpcszCrashSenderPath = NULL,
+  int Init(__in_opt LPCWSTR lpcszAppName = NULL,
+           __in_opt LPCWSTR lpcszAppVersion = NULL,
+           __in_opt LPCWSTR lpcszCrashSenderPath = NULL,
            __in_opt UINT (*puPriorities)[5] = NULL,
            DWORD dwFlags = 0,
-           __in_opt LPCTSTR lpcszDebugHelpDLLPath = NULL,
+           __in_opt LPCWSTR lpcszDebugHelpDLLPath = NULL,
            MINIDUMP_TYPE MiniDumpType = MiniDumpNormal,
-           __in_opt LPCTSTR lpcszErrorReportSaveDir = NULL,
-           __in_opt LPCTSTR lpcszRestartCmdLine = NULL,
-           __in_opt LPCTSTR lpcszCustomSenderIcon = NULL,
+           __in_opt LPCWSTR lpcszErrorReportSaveDir = NULL,
+           __in_opt LPCWSTR lpcszRestartCmdLine = NULL,
+           __in_opt LPCWSTR lpcszCustomSenderIcon = NULL,
            __in_opt int nRestartTimeout = 0);
 
   // Returns TRUE if object was initialized.
@@ -82,16 +81,10 @@ class CCrashHandler {
   int Destroy();
 
   // Sets crash callback function (wide-char version).
-  int SetCrashCallbackW(PFNCRASHCALLBACKW pfnCallback, LPVOID pUserParam);
-
-  // Sets crash callback function (multi-byte version).
-  int SetCrashCallbackA(PFNCRASHCALLBACKA pfnCallback, LPVOID pUserParam);
+  int SetCrashCallback(PFNCRASHCALLBACK pfnCallback, LPVOID pUserParam);
 
   // Adds a file to the crash report.
-  int AddFile(__in_z LPCTSTR lpFile,
-              __in_opt LPCTSTR lpDestFile,
-              __in_opt LPCTSTR lpDesc,
-              DWORD dwFlags);
+  int AddFile(__in_z LPCTSTR lpFile, __in_opt LPCTSTR lpDestFile, __in_opt LPCTSTR lpDesc, DWORD dwFlags);
 
   // Adds a named text property to the report.
   int AddProperty(CString sPropName, CString sPropValue);
@@ -105,11 +98,11 @@ class CCrashHandler {
   // Generates error report
   int GenerateErrorReport(__in_opt PCR_EXCEPTION_INFO pExceptionInfo = NULL);
 
-  // Sets/unsets exception handlers for the entire process
+  // Sets/unset exception handlers for the entire process
   int SetProcessExceptionHandlers(DWORD dwFlags);
   int UnSetProcessExceptionHandlers();
 
-  // Sets/unsets exception handlers for the caller thread
+  // Sets/unset exception handlers for the caller thread
   int SetThreadExceptionHandlers(DWORD dwFlags);
   int UnSetThreadExceptionHandlers();
 
@@ -144,11 +137,7 @@ class CCrashHandler {
 
 #if _MSC_VER >= 1400
   // C++ Invalid parameter handler.
-  static void __cdecl InvalidParameterHandler(const wchar_t* expression,
-                                              const wchar_t* function,
-                                              const wchar_t* file,
-                                              unsigned int line,
-                                              uintptr_t pReserved);
+  static void __cdecl InvalidParameterHandler(const wchar_t* expression, const wchar_t* function, const wchar_t* file, unsigned int line, uintptr_t pReserved);
 #endif
 
 #if _MSC_VER >= 1300
@@ -181,7 +170,7 @@ class CCrashHandler {
   DWORD PackRegKey(CString sKeyName, RegKeyInfo& rki);
 
   // Launches the CrashSender.exe process.
-  int LaunchCrashSender(LPCTSTR szCmdLineParams, BOOL bWait, __out_opt HANDLE* phProcess);
+  int LaunchCrashReport(LPCTSTR szCmdLineParams, BOOL bWait, __out_opt HANDLE* phProcess);
 
   // Returns TRUE if CrashSender.exe process is still alive.
   BOOL IsSenderProcessAlive();
@@ -227,41 +216,37 @@ class CCrashHandler {
   std::map<DWORD, ThreadExceptionHandlers> m_ThreadExceptionHandlers;
   CCritSec m_csThreadExceptionHandlers;  // Synchronization lock for m_ThreadExceptionHandlers.
 
-  BOOL m_bInitialized;                  // Flag telling if this object was initialized.
-  CString m_sAppName;                   // Application name.
-  CString m_sAppVersion;                // Application version.
-  CString m_sCrashGUID;                 // Crash GUID.
-  CString m_sImageName;                 // Process image name.
-  DWORD m_dwFlags;                      // Flags.
-  MINIDUMP_TYPE m_MinidumpType;         // Minidump type.
-  CString m_sRestartCmdLine;            // App restart command line.
-  int m_nRestartTimeout;                // Restart timeout.
-  UINT m_uPriorities[3];                // Delivery priorities.
-  CString m_sPathToCrashDumper;         // Path to CrashSender.exe
-  CString m_sPathToDebugHelpDll;        // Path to dbghelp.dll.
-  CString m_sUnsentCrashReportsFolder;  // Path to the folder where to save error reports.
-  BOOL m_bAddScreenshot;                // Should we add screenshot?
-  DWORD m_dwScreenshotFlags;            // Screenshot flags.
-  int m_nJpegQuality;                   // Quality of JPEG screenshot images.
-  CString
-      m_sCustomSenderIcon;  // Resource name that can be used as custom Error Report dialog icon.
+  BOOL m_bInitialized;                      // Flag telling if this object was initialized.
+  CString m_sAppName;                       // Application name.
+  CString m_sAppVersion;                    // Application version.
+  CString m_sCrashGUID;                     // Crash GUID.
+  CString m_sImageName;                     // Process image name.
+  DWORD m_dwFlags;                          // Flags.
+  MINIDUMP_TYPE m_MinidumpType;             // Minidump type.
+  CString m_sRestartCmdLine;                // App restart command line.
+  int m_nRestartTimeout;                    // Restart timeout.
+  UINT m_uPriorities[3];                    // Delivery priorities.
+  CString m_sPathToCrashReport;             // Path to CrashSender.exe
+  CString m_sPathToDebugHelpDll;            // Path to dbghelp.dll.
+  CString m_sUnsentCrashReportsFolder;      // Path to the folder where to save error reports.
+  BOOL m_bAddScreenshot;                    // Should we add screenshot?
+  DWORD m_dwScreenshotFlags;                // Screenshot flags.
+  int m_nJpegQuality;                       // Quality of JPEG screenshot images.
+  CString m_sCustomSenderIcon;              // Resource name that can be used as custom Error Report dialog icon.
   std::map<CString, FileItem> m_files;      // File items to include.
   std::map<CString, CString> m_props;       // User-defined properties to include.
   std::map<CString, RegKeyInfo> m_RegKeys;  // Registry keys to dump.
-  CCritSec m_csCrashLock;  // Critical section used to synchronize thread access to this object.
-  HANDLE m_hEvent;         // Event used to synchronize CrashRpt.dll with CrashSender.exe.
-  HANDLE m_hEvent2;        // Another event used to synchronize CrashRpt.dll with CrashSender.exe.
-  CSharedMem m_SharedMem;  // Shared memory.
-  CRASH_DESCRIPTION* m_pCrashDesc;     // Pointer to crash description shared mem view.
-  CSharedMem* m_pTmpSharedMem;         // Used temporarily
-  CRASH_DESCRIPTION* m_pTmpCrashDesc;  // Used temporarily
-  HANDLE m_hSenderProcess;             // Handle to CrashSender.exe process.
-  PFNCRASHCALLBACKW m_pfnCallback2W;   // Client crash callback.
-  PFNCRASHCALLBACKA m_pfnCallback2A;   // Client crash callback.
-  LPVOID m_pCallbackParam;             // User-specified argument for callback function.
-  std::string m_sErrorReportDirA;      // Error report directory name (multi-byte).
-  std::wstring m_sErrorReportDirW;     // Error report directory name (wide-char).
-  int m_nCallbackRetCode;              // Return code of the callback function.
-  BOOL
-      m_bContinueExecution;  // Whether to terminate process (the default) or to continue execution after crash.
+  CCritSec m_csCrashLock;                   // Critical section used to synchronize thread access to this object.
+  HANDLE m_hEvent;                          // Event used to synchronize CrashRpt.dll with CrashSender.exe.
+  HANDLE m_hEvent2;                         // Another event used to synchronize CrashRpt.dll with CrashSender.exe.
+  CSharedMem m_SharedMem;                   // Shared memory.
+  CRASH_DESCRIPTION* m_pCrashDesc;          // Pointer to crash description shared mem view.
+  CSharedMem* m_pTmpSharedMem;              // Used temporarily
+  CRASH_DESCRIPTION* m_pTmpCrashDesc;       // Used temporarily
+  HANDLE m_hSenderProcess;                  // Handle to CrashSender.exe process.
+  PFNCRASHCALLBACK m_pfnCallback2;          // Client crash callback.
+  LPVOID m_pCallbackParam;                  // User-specified argument for callback function.
+  std::wstring m_sErrorReportDirW;          // Error report directory name (wide-char).
+  int m_nCallbackRetCode;                   // Return code of the callback function.
+  BOOL m_bContinueExecution;                // Whether to terminate process (the default) or to continue execution after crash.
 };

@@ -1,3 +1,4 @@
+cmake_minimum_required (VERSION 3.16)
 project(ConsoleDemo)
 
 # Create the list of source files
@@ -20,3 +21,5 @@ add_executable(ConsoleDemo ${source_files} ${header_files})
 target_link_libraries(ConsoleDemo libcrashrpt)
 
 set_target_properties(ConsoleDemo PROPERTIES DEBUG_POSTFIX d )
+
+set_property(TARGET ConsoleDemo PROPERTY VS_DPI_AWARE "PerMonitor")

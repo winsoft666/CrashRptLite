@@ -1,22 +1,14 @@
 EXPORTS   
-   crInstallW                     @1
-   crInstallA                     @2
-   crUninstall                    @3   
-   crInstallToCurrentThread       @4
-   crUninstallFromCurrentThread   @5
-   crAddFileW                     @6
-   crAddFileA                     @7
-   crAddPropertyW                 @8
-   crAddPropertyA                 @9
-   crGenerateErrorReport          @10 
-   crExceptionFilter              @11  
-   crEmulateCrash                 @12
-   crGetLastErrorMsgW             @13
-   crGetLastErrorMsgA             @14
-   crAddRegKeyW                   @15
-   crAddRegKeyA                   @16
-   crAddScreenshot                @17
-   crSetCrashCallbackW            @18
-   crSetCrashCallbackA            @19
-   
-
+   crInstall                      @1
+   crUninstall                    @2   
+   crInstallToCurrentThread       @3
+   crUninstallFromCurrentThread   @4
+   crAddFile                      @5
+   crAddProperty                  @6
+   crGenerateErrorReport          @7 
+   crExceptionFilter              @8  
+   crEmulateCrash                 @9
+   crGetLastErrorMsg              @10
+   crAddRegKey                    @11
+   crAddScreenshot                @12
+   crSetCrashCallback             @13

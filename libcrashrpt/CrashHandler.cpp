@@ -3,6 +3,7 @@
 #include "Utility.h"
 #include "resource.h"
 #include "strconv.h"
+#include <strsafe.h>
 
 #ifndef _AddressOfReturnAddress
 
@@ -35,8 +36,7 @@ CCrashHandler::CCrashHandler() {
   m_hEvent2 = NULL;
   m_pCrashDesc = NULL;
   m_hSenderProcess = NULL;
-  m_pfnCallback2W = NULL;
-  m_pfnCallback2A = NULL;
+  m_pfnCallback2 = NULL;
   m_pCallbackParam = NULL;
   m_nCallbackRetCode = CR_CB_NOTIFY_NEXT_STAGE;
   m_bContinueExecution = TRUE;
@@ -50,22 +50,22 @@ CCrashHandler::~CCrashHandler() {
   Destroy();
 }
 
-int CCrashHandler::Init(LPCTSTR lpcszAppName,
-                        LPCTSTR lpcszAppVersion,
-                        LPCTSTR lpcszCrashSenderPath,
+int CCrashHandler::Init(LPCWSTR lpcszAppName,
+                        LPCWSTR lpcszAppVersion,
+                        LPCWSTR lpcszCrashReportPath,
                         UINT (*puPriorities)[5],
                         DWORD dwFlags,
-                        LPCTSTR lpcszDebugHelpDLLPath,
+                        LPCWSTR lpcszDebugHelpDLLPath,
                         MINIDUMP_TYPE MiniDumpType,
-                        LPCTSTR lpcszErrorReportSaveDir,
-                        LPCTSTR lpcszRestartCmdLine,
-                        LPCTSTR lpcszCustomSenderIcon,
+                        LPCWSTR lpcszErrorReportSaveDir,
+                        LPCWSTR lpcszRestartCmdLine,
+                        LPCWSTR lpcszCustomSenderIcon,
                         int nRestartTimeout) {
   // This method initializes configuration parameters,
   // creates shared memory buffer and saves the configuration parameters there,
   // installs process-wide exception handlers.
 
-  crSetErrorMsg(_T("Unspecified error."));
+  crSetErrorMsg(L"Unspecified error.");
 
   // Save flags
   m_dwFlags = dwFlags;
@@ -91,7 +91,7 @@ int CCrashHandler::Init(LPCTSTR lpcszAppName,
     m_sAppVersion = Utility::GetProductVersion(sImageName);
     if (m_sAppVersion.IsEmpty()) {
       // If product version missing, return error.
-      crSetErrorMsg(_T("Application version is not specified."));
+      crSetErrorMsg(L"Application version is not specified.");
       return 1;
     }
   }
@@ -123,7 +123,7 @@ int CCrashHandler::Init(LPCTSTR lpcszAppName,
     sResourceFile.TrimRight();
 
     if (nIconIndex == -1) {
-      crSetErrorMsg(_T("Invalid index of custom icon (it should not equal to -1)."));
+      crSetErrorMsg(L"Invalid index of custom icon (it should not equal to -1).");
       return 1;
     }
   }
@@ -141,62 +141,49 @@ int CCrashHandler::Init(LPCTSTR lpcszAppName,
     memset(&m_uPriorities, 0, 3 * sizeof(UINT));
 
   // Save path to CrashSender.exe
-  if (lpcszCrashSenderPath == NULL) {
-    // By default assume that CrashSender.exe is located in the same dir as CrashRpt.dll
-    m_sPathToCrashDumper = Utility::GetModulePath((HMODULE)g_hModuleCrashRpt);
+  if (lpcszCrashReportPath == NULL) {
+    // By default assume that CrashReport.exe is located in the same folder as libcrashrpt.dll or current executable.
+    m_sPathToCrashReport = Utility::GetModulePath((HMODULE)g_hModuleCrashRpt);
+    m_sPathToCrashReport += TEXT("\\crashreport.exe");
   }
   else {
     // Save user-specified path
-    m_sPathToCrashDumper = CString(lpcszCrashSenderPath);
+    m_sPathToCrashReport = CString(lpcszCrashReportPath);
   }
 
-  CString sCrashDumperName;
-  sCrashDumperName.Format(_T("crashreport.exe"));
-
-  // Check that CrashSender.exe file exists
-  if (m_sPathToCrashDumper.Right(1) != '\\')
-    m_sPathToCrashDumper += "\\";
-
-  HANDLE hFile = CreateFile(m_sPathToCrashDumper + sCrashDumperName, FILE_GENERIC_READ,
-                            FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
+  HANDLE hFile = CreateFile(m_sPathToCrashReport, FILE_GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
   if (hFile == INVALID_HANDLE_VALUE) {
-    crSetErrorMsg(_T("CrashReport.exe is not found in the specified path."));
+    crSetErrorMsg(L"CrashReport.exe is not found in the specified path.");
     return 1;
   }
   else {
     CloseHandle(hFile);
   }
 
-  m_sPathToCrashDumper += sCrashDumperName;
-
   // If path to dbghelp.dll not provided, use the default one
   if (lpcszDebugHelpDLLPath == NULL) {
     // By default assume that debughlp.dll is located in the same dir as CrashRpt.dll
     m_sPathToDebugHelpDll = Utility::GetModulePath((HMODULE)g_hModuleCrashRpt);
+    m_sPathToDebugHelpDll += TEXT("\\dbghelp.dll");
   }
   else {
     m_sPathToDebugHelpDll = CString(lpcszDebugHelpDLLPath);
   }
 
-  CString sDebugHelpDLL_name = "dbghelp.dll";
-
-  if (m_sPathToDebugHelpDll.Right(1) != '\\')
-    m_sPathToDebugHelpDll += "\\";
-
   // Load dbghelp.dll library
-  HANDLE hDbgHelpDll = LoadLibrary(m_sPathToDebugHelpDll + sDebugHelpDLL_name);
+  HANDLE hDbgHelpDll = LoadLibrary(m_sPathToDebugHelpDll);
   // and check result
   if (!hDbgHelpDll) {
     //try again ... fallback to dbghelp.dll in path
-    m_sPathToDebugHelpDll = _T("");
-    hDbgHelpDll = LoadLibrary(sDebugHelpDLL_name);
+    hDbgHelpDll = LoadLibrary(TEXT("dbghelp.dll"));
     if (!hDbgHelpDll) {
-      crSetErrorMsg(_T("Couldn't load dbghelp.dll."));
+      crSetErrorMsg(L"Couldn't load dbghelp.dll.");
       return 1;
     }
+    else {
+      m_sPathToDebugHelpDll = TEXT("dbghelp.dll");
+    }
   }
-
-  m_sPathToDebugHelpDll += sDebugHelpDLL_name;
 
   if (hDbgHelpDll != NULL) {
     FreeLibrary((HMODULE)hDbgHelpDll);
@@ -208,8 +195,7 @@ int CCrashHandler::Init(LPCTSTR lpcszAppName,
     CString sLocalAppDataFolder;
     DWORD dwCSIDL = CSIDL_LOCAL_APPDATA;
     Utility::GetSpecialFolder(dwCSIDL, sLocalAppDataFolder);
-    m_sUnsentCrashReportsFolder.Format(_T("%s\\CrashReports\\%s_%s"),
-                                       sLocalAppDataFolder, m_sAppName, m_sAppVersion);
+    m_sUnsentCrashReportsFolder.Format(_T("%s\\CrashReports\\%s_%s"), sLocalAppDataFolder, m_sAppName, m_sAppVersion);
   }
   else {
     m_sUnsentCrashReportsFolder = lpcszErrorReportSaveDir;
@@ -218,7 +204,7 @@ int CCrashHandler::Init(LPCTSTR lpcszAppName,
   BOOL bCreateDir = Utility::CreateFolder(m_sUnsentCrashReportsFolder);
   if (!bCreateDir) {
     ATLASSERT(0);
-    crSetErrorMsg(_T("Couldn't create crash report directory."));
+    crSetErrorMsg(L"Couldn't create crash report directory.");
     return 1;
   }
 
@@ -227,7 +213,7 @@ int CCrashHandler::Init(LPCTSTR lpcszAppName,
   bCreateDir = Utility::CreateFolder(sLogDir);
   if (!bCreateDir) {
     ATLASSERT(0);
-    crSetErrorMsg(_T("Couldn't create logs directory."));
+    crSetErrorMsg(L"Couldn't create logs directory.");
     return 1;
   }
 
@@ -245,7 +231,7 @@ int CCrashHandler::Init(LPCTSTR lpcszAppName,
   int nSetProcessHandlers = SetProcessExceptionHandlers(dwFlags);
   if (nSetProcessHandlers != 0) {
     ATLASSERT(nSetProcessHandlers == 0);
-    crSetErrorMsg(_T("Couldn't set C++ exception handlers for current process."));
+    crSetErrorMsg(L"Couldn't set C++ exception handlers for current process.");
     return 1;
   }
 
@@ -253,11 +239,9 @@ int CCrashHandler::Init(LPCTSTR lpcszAppName,
   int nSetThreadHandlers = SetThreadExceptionHandlers(dwFlags);
   if (nSetThreadHandlers != 0) {
     ATLASSERT(nSetThreadHandlers == 0);
-    crSetErrorMsg(_T("Couldn't set C++ exception handlers for main execution thread."));
+    crSetErrorMsg(L"Couldn't set C++ exception handlers for main execution thread.");
     return 1;
   }
-
-
 
   // The following code is intended to fix the issue with 32-bit applications in 64-bit environment.
   // http://support.microsoft.com/kb/976038/en-us
@@ -269,15 +253,10 @@ int CCrashHandler::Init(LPCTSTR lpcszAppName,
 
   HMODULE hKernel32 = LoadLibrary(_T("kernel32.dll"));
   if (hKernel32 != NULL) {
-    SETPROCESSUSERMODEEXCEPTIONPOLICY pfnSetProcessUserModeExceptionPolicy =
-        (SETPROCESSUSERMODEEXCEPTIONPOLICY)GetProcAddress(hKernel32,
-                                                          "SetProcessUserModeExceptionPolicy");
-    GETPROCESSUSERMODEEXCEPTIONPOLICY pfnGetProcessUserModeExceptionPolicy =
-        (GETPROCESSUSERMODEEXCEPTIONPOLICY)GetProcAddress(hKernel32,
-                                                          "GetProcessUserModeExceptionPolicy");
+    SETPROCESSUSERMODEEXCEPTIONPOLICY pfnSetProcessUserModeExceptionPolicy = (SETPROCESSUSERMODEEXCEPTIONPOLICY)GetProcAddress(hKernel32, "SetProcessUserModeExceptionPolicy");
+    GETPROCESSUSERMODEEXCEPTIONPOLICY pfnGetProcessUserModeExceptionPolicy = (GETPROCESSUSERMODEEXCEPTIONPOLICY)GetProcAddress(hKernel32, "GetProcessUserModeExceptionPolicy");
 
-    if (pfnSetProcessUserModeExceptionPolicy != NULL &&
-        pfnGetProcessUserModeExceptionPolicy != NULL) {
+    if (pfnSetProcessUserModeExceptionPolicy != NULL && pfnGetProcessUserModeExceptionPolicy != NULL) {
       DWORD dwFlags = 0;
       if (pfnGetProcessUserModeExceptionPolicy(&dwFlags)) {
         pfnSetProcessUserModeExceptionPolicy(dwFlags & ~PROCESS_CALLBACK_FILTER_ENABLED);
@@ -289,27 +268,19 @@ int CCrashHandler::Init(LPCTSTR lpcszAppName,
 
   // Initialization OK.
   m_bInitialized = TRUE;
-  crSetErrorMsg(_T("Success."));
+  crSetErrorMsg(L"Success.");
   return 0;
 }
 
-int CCrashHandler::SetCrashCallbackW(PFNCRASHCALLBACKW pfnCallback, LPVOID pUserParam) {
-  m_pfnCallback2W = pfnCallback;
-  m_pCallbackParam = pUserParam;
-
-  return 0;
-}
-
-int CCrashHandler::SetCrashCallbackA(PFNCRASHCALLBACKA pfnCallback, LPVOID pUserParam) {
-  m_pfnCallback2A = pfnCallback;
+int CCrashHandler::SetCrashCallback(PFNCRASHCALLBACK pfnCallback, LPVOID pUserParam) {
+  m_pfnCallback2 = pfnCallback;
   m_pCallbackParam = pUserParam;
 
   return 0;
 }
 
 // Packs config info to shared mem.
-CRASH_DESCRIPTION* CCrashHandler::PackCrashInfoIntoSharedMem(CSharedMem* pSharedMem,
-                                                             BOOL bTempMem) {
+CRASH_DESCRIPTION* CCrashHandler::PackCrashInfoIntoSharedMem(CSharedMem* pSharedMem, BOOL bTempMem) {
   m_pTmpSharedMem = pSharedMem;
 
   CString sSharedMemName;
@@ -323,7 +294,7 @@ CRASH_DESCRIPTION* CCrashHandler::PackCrashInfoIntoSharedMem(CSharedMem* pShared
     BOOL bSharedMem = pSharedMem->Init(sSharedMemName, FALSE, SHARED_MEM_MAX_SIZE);
     if (!bSharedMem) {
       ATLASSERT(0);
-      crSetErrorMsg(_T("Couldn't initialize shared memory."));
+      crSetErrorMsg(L"Couldn't initialize shared memory.");
       return NULL;
     }
   }
@@ -332,7 +303,7 @@ CRASH_DESCRIPTION* CCrashHandler::PackCrashInfoIntoSharedMem(CSharedMem* pShared
   m_pTmpCrashDesc = (CRASH_DESCRIPTION*)pSharedMem->CreateView(0, sizeof(CRASH_DESCRIPTION));
   if (m_pTmpCrashDesc == NULL) {
     ATLASSERT(0);
-    crSetErrorMsg(_T("Couldn't create shared memory view."));
+    crSetErrorMsg(L"Couldn't create shared memory view.");
     return NULL;
   }
 
@@ -474,10 +445,10 @@ BOOL CCrashHandler::IsInitialized() {
 
 // Destroys the object
 int CCrashHandler::Destroy() {
-  crSetErrorMsg(_T("Unspecified error."));
+  crSetErrorMsg(L"Unspecified error.");
 
   if (!m_bInitialized) {
-    crSetErrorMsg(_T("Can't destroy not initialized crash handler."));
+    crSetErrorMsg(L"Can't destroy not initialized crash handler.");
     return 1;
   }
 
@@ -515,7 +486,7 @@ int CCrashHandler::Destroy() {
 
   // OK.
   m_bInitialized = FALSE;
-  crSetErrorMsg(_T("Success."));
+  crSetErrorMsg(L"Success.");
   return 0;
 }
 
@@ -556,7 +527,7 @@ void CCrashHandler::ReleaseCurrentProcessCrashHandler() {
 
 // Sets exception handlers that work on per-process basis
 int CCrashHandler::SetProcessExceptionHandlers(DWORD dwFlags) {
-  crSetErrorMsg(_T("Unspecified error."));
+  crSetErrorMsg(L"Unspecified error.");
 
   // If 0 is specified as dwFlags, assume all handlers should be
   // installed
@@ -622,13 +593,13 @@ int CCrashHandler::SetProcessExceptionHandlers(DWORD dwFlags) {
     m_prevSigTERM = signal(SIGTERM, SigtermHandler);
   }
 
-  crSetErrorMsg(_T("Success."));
+  crSetErrorMsg(L"Success.");
   return 0;
 }
 
-// Unsets exception pointers that work on per-process basis
+// Unset exception pointers that work on per-process basis
 int CCrashHandler::UnSetProcessExceptionHandlers() {
-  crSetErrorMsg(_T("Unspecified error."));
+  crSetErrorMsg(L"Unspecified error.");
 
   // Unset all previously set handlers
 
@@ -659,13 +630,13 @@ int CCrashHandler::UnSetProcessExceptionHandlers() {
   if (m_prevSigTERM != NULL)
     signal(SIGTERM, m_prevSigTERM);
 
-  crSetErrorMsg(_T("Success."));
+  crSetErrorMsg(L"Success.");
   return 0;
 }
 
 // Installs C++ exception handlers that function on per-thread basis
 int CCrashHandler::SetThreadExceptionHandlers(DWORD dwFlags) {
-  crSetErrorMsg(_T("Unspecified error."));
+  crSetErrorMsg(L"Unspecified error.");
 
   // If 0 is specified as dwFlags, assume all available exception handlers should be
   // installed
@@ -679,12 +650,11 @@ int CCrashHandler::SetThreadExceptionHandlers(DWORD dwFlags) {
   CAutoLock lock(&m_csThreadExceptionHandlers);
 
   // Try and find our thread ID in the list of threads.
-  std::map<DWORD, ThreadExceptionHandlers>::iterator it =
-      m_ThreadExceptionHandlers.find(dwThreadId);
+  std::map<DWORD, ThreadExceptionHandlers>::iterator it = m_ThreadExceptionHandlers.find(dwThreadId);
 
   if (it != m_ThreadExceptionHandlers.end()) {
     // handlers are already set for the thread
-    crSetErrorMsg(_T("Can't install handlers for current thread twice."));
+    crSetErrorMsg(L"Can't install handlers for current thread twice.");
     return 1;  // failed
   }
 
@@ -701,7 +671,7 @@ int CCrashHandler::SetThreadExceptionHandlers(DWORD dwFlags) {
 
   if (dwFlags & CR_INST_UNEXPECTED_HANDLER) {
     // Catch unexpected() calls.
-    // In a multithreaded environment, unexpected functions are maintained
+    // In a multi-thread environment, unexpected functions are maintained
     // separately for each thread. Each new thread needs to install its own
     // unexpected function. Thus, each thread is in charge of its own unexpected handling.
     // http://msdn.microsoft.com/en-us/library/h46t5b69.aspx
@@ -728,24 +698,23 @@ int CCrashHandler::SetThreadExceptionHandlers(DWORD dwFlags) {
   m_ThreadExceptionHandlers[dwThreadId] = handlers;
 
   // OK.
-  crSetErrorMsg(_T("Success."));
+  crSetErrorMsg(L"Success.");
   return 0;
 }
 
-// Unsets exception handlers for the current thread
+// Unset exception handlers for the current thread
 int CCrashHandler::UnSetThreadExceptionHandlers() {
-  crSetErrorMsg(_T("Unspecified error."));
+  crSetErrorMsg(L"Unspecified error.");
 
   DWORD dwThreadId = GetCurrentThreadId();
 
   CAutoLock lock(&m_csThreadExceptionHandlers);
 
-  std::map<DWORD, ThreadExceptionHandlers>::iterator it =
-      m_ThreadExceptionHandlers.find(dwThreadId);
+  std::map<DWORD, ThreadExceptionHandlers>::iterator it = m_ThreadExceptionHandlers.find(dwThreadId);
 
   if (it == m_ThreadExceptionHandlers.end()) {
     // No exception handlers were installed for the caller thread?
-    crSetErrorMsg(_T("Crash handler wasn't previously installed for current thread."));
+    crSetErrorMsg(L"Crash handler wasn't previously installed for current thread.");
     return 1;
   }
 
@@ -770,17 +739,17 @@ int CCrashHandler::UnSetThreadExceptionHandlers() {
   m_ThreadExceptionHandlers.erase(it);
 
   // OK.
-  crSetErrorMsg(_T("Success."));
+  crSetErrorMsg(L"Success.");
   return 0;
 }
 
 // Adds a file item to the error report
 int CCrashHandler::AddFile(LPCTSTR pszFile, LPCTSTR pszDestFile, LPCTSTR pszDesc, DWORD dwFlags) {
-  crSetErrorMsg(_T("Unspecified error."));
+  crSetErrorMsg(L"Unspecified error.");
 
   // Check if source file name or search pattern is specified
   if (pszFile == NULL) {
-    crSetErrorMsg(_T("Invalid file name specified."));
+    crSetErrorMsg(L"Invalid file name specified.");
     return 1;
   }
 
@@ -790,7 +759,7 @@ int CCrashHandler::AddFile(LPCTSTR pszFile, LPCTSTR pszDestFile, LPCTSTR pszDesc
     sDestFile.TrimLeft();
     sDestFile.TrimRight();
     if (sDestFile.GetLength() == 0) {
-      crSetErrorMsg(_T("Invalid destination file name specified."));
+      crSetErrorMsg(L"Invalid destination file name specified.");
       return 1;
     }
   }
@@ -806,7 +775,7 @@ int CCrashHandler::AddFile(LPCTSTR pszFile, LPCTSTR pszDestFile, LPCTSTR pszDesc
     BOOL bIsFile = dwAttrs != INVALID_FILE_ATTRIBUTES && (dwAttrs & FILE_ATTRIBUTE_DIRECTORY) == 0;
 
     if (!bIsFile && (dwFlags & CR_AF_MISSING_FILE_OK) == 0) {
-      crSetErrorMsg(_T("The file does not exists or not a regular file."));
+      crSetErrorMsg(L"The file does not exists or not a regular file.");
       return 1;
     }
 
@@ -833,7 +802,7 @@ int CCrashHandler::AddFile(LPCTSTR pszFile, LPCTSTR pszDestFile, LPCTSTR pszDesc
     // Check if file is already in our list
     std::map<CString, FileItem>::iterator it = m_files.find(fi.m_sDstFileName);
     if (it != m_files.end()) {
-      crSetErrorMsg(_T("A file with such a destination name already exists."));
+      crSetErrorMsg(L"A file with such a destination name already exists.");
       return 1;
     }
 
@@ -858,16 +827,16 @@ int CCrashHandler::AddFile(LPCTSTR pszFile, LPCTSTR pszDestFile, LPCTSTR pszDesc
   }
 
   // OK.
-  crSetErrorMsg(_T("Success."));
+  crSetErrorMsg(L"Success.");
   return 0;
 }
 
 // Adds a custom property to the error report
 int CCrashHandler::AddProperty(CString sPropName, CString sPropValue) {
-  crSetErrorMsg(_T("Unspecified error."));
+  crSetErrorMsg(L"Unspecified error.");
 
   if (sPropName.IsEmpty()) {
-    crSetErrorMsg(_T("Invalid property name specified."));
+    crSetErrorMsg(L"Invalid property name specified.");
     return 1;
   }
 
@@ -876,16 +845,16 @@ int CCrashHandler::AddProperty(CString sPropName, CString sPropValue) {
   PackProperty(sPropName, sPropValue);
 
   // OK.
-  crSetErrorMsg(_T("Success."));
+  crSetErrorMsg(L"Success.");
   return 0;
 }
 
 // Adds a screen shot to the error report
 int CCrashHandler::AddScreenshot(DWORD dwFlags, int nJpegQuality) {
-  crSetErrorMsg(_T("Unspecified error."));
+  crSetErrorMsg(L"Unspecified error.");
 
   if (nJpegQuality < 0 || nJpegQuality > 100) {
-    crSetErrorMsg(_T("Invalid Jpeg quality."));
+    crSetErrorMsg(L"Invalid Jpeg quality.");
     return 1;
   }
 
@@ -898,13 +867,13 @@ int CCrashHandler::AddScreenshot(DWORD dwFlags, int nJpegQuality) {
   m_pCrashDesc->m_dwScreenshotFlags = dwFlags;
   m_pCrashDesc->m_nJpegQuality = nJpegQuality;
 
-  crSetErrorMsg(_T("Success."));
+  crSetErrorMsg(L"Success.");
   return 0;
 }
 
 // Generates error report
 int CCrashHandler::GenerateErrorReport(PCR_EXCEPTION_INFO pExceptionInfo) {
-  crSetErrorMsg(_T("Unspecified error."));
+  crSetErrorMsg(L"Unspecified error.");
 
   // Allocate memory in stack for storing exception pointers.
   EXCEPTION_RECORD ExceptionRecord;
@@ -915,7 +884,7 @@ int CCrashHandler::GenerateErrorReport(PCR_EXCEPTION_INFO pExceptionInfo) {
 
   // Validate input parameters
   if (pExceptionInfo == NULL) {
-    crSetErrorMsg(_T("Exception info is NULL."));
+    crSetErrorMsg(L"Exception info is NULL.");
     return 1;
   }
 
@@ -957,7 +926,6 @@ int CCrashHandler::GenerateErrorReport(PCR_EXCEPTION_INFO pExceptionInfo) {
     m_pCrashDesc->m_uInvParamLine = pExceptionInfo->line;
   }
 
-
   // New-style callback
   if (CR_CB_CANCEL == CallBack(CR_CB_STAGE_PREPARE, pExceptionInfo)) {
     // User has canceled error report generation!
@@ -965,21 +933,18 @@ int CCrashHandler::GenerateErrorReport(PCR_EXCEPTION_INFO pExceptionInfo) {
     // Prepare for the next crash
     PerCrashInit();
 
-    crSetErrorMsg(_T("The operation was cancelled by client."));
+    crSetErrorMsg(L"The operation was canceled by client.");
     return 2;
   }
 
-  // Start the CrashSender.exe process which will take the dekstop screenshot,
+  // Start the CrashSender.exe process which will take the desktop screenshot,
   // copy user-specified files to the error report folder, create minidump,
   // notify user about crash, compress the report into ZIP archive and send
   // the error report.
 
   int result = 0;  // result of launching CrashSender.exe
 
-
-    // Run new CrashSender.exe process
-    result = LaunchCrashSender(m_sCrashGUID, TRUE, &pExceptionInfo->hCrashReportProcess);
-  
+  result = LaunchCrashReport(m_sCrashGUID, TRUE, &pExceptionInfo->hCrashReportProcess);
 
   // New-style callback. Notify client about the second stage
   // (CR_CB_STAGE_FINISH) of crash report generation.
@@ -995,20 +960,20 @@ int CCrashHandler::GenerateErrorReport(PCR_EXCEPTION_INFO pExceptionInfo) {
   // Check the result of launching the crash sender process.
   if (result != 0) {
     ATLASSERT(result == 0);
-    crSetErrorMsg(_T("Error launching CrashSender.exe"));
+    crSetErrorMsg(L"Error launching CrashReport.exe");
 
     // Failed to launch crash sender process.
     // Try notifying user about crash using message box.
     CString szCaption;
     szCaption.Format(_T("%s has stopped working"), Utility::getAppName());
     CString szMessage;
-    szMessage.Format(_T("Error launching CrashSender.exe"));
+    szMessage.Format(_T("Error launching CrashReport.exe"));
     MessageBox(NULL, szMessage, szCaption, MB_OK | MB_ICONERROR);
     return 3;
   }
 
   // OK
-  crSetErrorMsg(_T("Success."));
+  crSetErrorMsg(L"Success.");
   return 0;
 }
 
@@ -1025,18 +990,16 @@ BOOL CCrashHandler::IsSenderProcessAlive() {
 
 // Adds a registry key dump to the error report
 int CCrashHandler::AddRegKey(LPCTSTR szRegKey, LPCTSTR szDstFileName, DWORD dwFlags) {
-  crSetErrorMsg(_T("Unspecified error."));
+  crSetErrorMsg(L"Unspecified error.");
 
   if (szDstFileName == NULL || szRegKey == NULL) {
     // Invalid param
-    crSetErrorMsg(_T("Invalid registry key or invalid destination file is specified."));
+    crSetErrorMsg(L"Invalid registry key or invalid destination file is specified.");
     return 1;
   }
 
   CString sDstFileName = CString(szDstFileName);
-  if (sDstFileName.Find(_T("\\")) >= 0 || sDstFileName.Find(_T("\r")) >= 0 ||
-      sDstFileName.Find(_T("\n")) >= 0 || sDstFileName.Find(_T("\t")) >= 0) {
-    // Inacceptable character found.
+  if (sDstFileName.Find(_T("\\")) >= 0 || sDstFileName.Find(_T("\r")) >= 0 || sDstFileName.Find(_T("\n")) >= 0 || sDstFileName.Find(_T("\t")) >= 0) {
     return 1;
   }
 
@@ -1052,20 +1015,20 @@ int CCrashHandler::AddRegKey(LPCTSTR szRegKey, LPCTSTR szDstFileName, DWORD dwFl
     nSkip = 17;
   }
   else {
-    crSetErrorMsg(_T("Invalid registry branch is specified."));
+    crSetErrorMsg(L"Invalid registry branch is specified.");
     return 1;  // Invalid key.
   }
 
   CString sSubKey = sKey.Mid(nSkip + 1);
   if (sSubKey.IsEmpty()) {
-    crSetErrorMsg(_T("Empty subkey is not allowed."));
+    crSetErrorMsg(L"Empty subkey is not allowed.");
     return 2;  // Empty subkey not allowed
   }
 
   HKEY hKeyResult = NULL;
   LRESULT lResult = RegOpenKeyEx(hKey, sSubKey, 0, KEY_READ, &hKeyResult);
   if (lResult != ERROR_SUCCESS) {
-    crSetErrorMsg(_T("The registry key coudn't be open."));
+    crSetErrorMsg(L"The registry key couldn't be open.");
     return 3;  // Invalid key.
   }
   RegCloseKey(hKeyResult);
@@ -1079,13 +1042,12 @@ int CCrashHandler::AddRegKey(LPCTSTR szRegKey, LPCTSTR szDstFileName, DWORD dwFl
   PackRegKey(szRegKey, rki);
 
   // OK
-  crSetErrorMsg(_T("Success."));
+  crSetErrorMsg(L"Success.");
   return 0;
 }
 
 // The following code gets exception pointers using a workaround found in CRT code.
-void CCrashHandler::GetExceptionPointers(DWORD dwExceptionCode,
-                                         EXCEPTION_POINTERS* pExceptionPointers) {
+void CCrashHandler::GetExceptionPointers(DWORD dwExceptionCode, EXCEPTION_POINTERS* pExceptionPointers) {
   // The following code was taken from VC++ 8.0 CRT (invarg.c: line 104)
 
   CONTEXT ContextRecord;
@@ -1137,11 +1099,8 @@ void CCrashHandler::GetExceptionPointers(DWORD dwExceptionCode,
   pExceptionPointers->ExceptionRecord->ExceptionAddress = _ReturnAddress();
 }
 
-// Launches CrashSender.exe process
-int CCrashHandler::LaunchCrashSender(LPCTSTR szCmdLineParams, BOOL bWait, HANDLE* phProcess) {
-  crSetErrorMsg(_T("Unspecified error."));
-
-  /* Create CrashSender.exe process */
+int CCrashHandler::LaunchCrashReport(LPCTSTR szCmdLineParams, BOOL bWait, HANDLE* phProcess) {
+  crSetErrorMsg(L"Unspecified error.");
 
   STARTUPINFO si;
   memset(&si, 0, sizeof(STARTUPINFO));
@@ -1153,31 +1112,32 @@ int CCrashHandler::LaunchCrashSender(LPCTSTR szCmdLineParams, BOOL bWait, HANDLE
   // Format command line
   TCHAR szCmdLine[_MAX_PATH] = _T("");
   _tcscat_s(szCmdLine, _MAX_PATH, _T("\""));
-  _tcscat_s(szCmdLine, _MAX_PATH, m_sPathToCrashDumper.GetBuffer(0));
+  _tcscat_s(szCmdLine, _MAX_PATH, m_sPathToCrashReport.GetBuffer(0));
   _tcscat_s(szCmdLine, _MAX_PATH, _T("\" \""));
   _tcscat_s(szCmdLine, _MAX_PATH, szCmdLineParams);
   _tcscat_s(szCmdLine, _MAX_PATH, _T("\""));
 
-  BOOL bCreateProcess =
-      CreateProcess(m_sPathToCrashDumper, szCmdLine, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi);
+  TCHAR szCurDir[MAX_PATH] = {0};
+  StringCchCopy(szCurDir, MAX_PATH, m_sPathToCrashReport);
+  PathRemoveFileSpec(szCurDir);
+
+  BOOL bCreateProcess = CreateProcess(m_sPathToCrashReport, szCmdLine, NULL, NULL, FALSE, 0, NULL, szCurDir, &si, &pi);
   if (pi.hThread) {
     CloseHandle(pi.hThread);
     pi.hThread = NULL;
   }
   if (!bCreateProcess) {
     ATLASSERT(bCreateProcess);
-    crSetErrorMsg(_T("Error creating CrashSender process."));
+    crSetErrorMsg(L"Error creating CrashReport process.");
     return 1;
   }
 
   if (bWait) {
-    /* Wait until CrashSender finishes with making screenshot, 
-        copying files, creating minidump. */
-
+    // Wait until CrashReport finishes with making screenshot, copying files, creating minidump.
     WaitForSingleObject(m_hEvent, INFINITE);
   }
 
-  // Return handle to the CrashSender.exe process.
+  // Return handle to the CrashReport.exe process.
   if (phProcess != NULL) {
     *phProcess = pi.hProcess;
   }
@@ -1188,7 +1148,7 @@ int CCrashHandler::LaunchCrashSender(LPCTSTR szCmdLineParams, BOOL bWait, HANDLE
   }
 
   // Done
-  crSetErrorMsg(_T("Success."));
+  crSetErrorMsg(L"Success.");
   return 0;
 }
 
@@ -1228,14 +1188,11 @@ int CCrashHandler::PerCrashInit() {
 
   // Format error report dir name for the next crash report.
   CString sErrorReportDirName;
-  sErrorReportDirName.Format(_T("%s\\%s_%s\\%s"), m_sUnsentCrashReportsFolder.GetBuffer(0),
-                             m_sAppName.GetBuffer(0), m_sAppVersion.GetBuffer(0),
-                             m_sCrashGUID.GetBuffer(0));
+  sErrorReportDirName.Format(_T("%s\\%s_%s\\%s"), m_sUnsentCrashReportsFolder.GetBuffer(0), m_sAppName.GetBuffer(0), m_sAppVersion.GetBuffer(0), m_sCrashGUID.GetBuffer(0));
 
   // Convert it to wide-char and multi-byte charsets.
   strconv_t strconv;
   m_sErrorReportDirW = strconv.t2w(sErrorReportDirName);
-  m_sErrorReportDirA = strconv.t2a(sErrorReportDirName);
 
   // Reset shared memory
   if (m_SharedMem.IsInitialized()) {
@@ -1261,13 +1218,13 @@ int CCrashHandler::CallBack(int nStage, CR_EXCEPTION_INFO* pExInfo) {
   if (m_nCallbackRetCode != CR_CB_NOTIFY_NEXT_STAGE)
     return CR_CB_DODEFAULT;
 
-  if (m_pfnCallback2W != NULL) {
+  if (m_pfnCallback2 != NULL) {
     // Call the wide-char version of the callback function.
 
     // Prepare callback info structure
-    CR_CRASH_CALLBACK_INFOW cci;
-    memset(&cci, 0, sizeof(CR_CRASH_CALLBACK_INFOW));
-    cci.cb = sizeof(CR_CRASH_CALLBACK_INFOW);
+    CR_CRASH_CALLBACK_INFO cci;
+    memset(&cci, 0, sizeof(CR_CRASH_CALLBACK_INFO));
+    cci.cb = sizeof(CR_CRASH_CALLBACK_INFO);
     cci.nStage = nStage;
     cci.pExceptionInfo = pExInfo;
     cci.pUserParam = m_pCallbackParam;
@@ -1275,26 +1232,7 @@ int CCrashHandler::CallBack(int nStage, CR_EXCEPTION_INFO* pExInfo) {
     cci.bContinueExecution = m_bContinueExecution;
 
     // Call the function and get the ret code
-    m_nCallbackRetCode = m_pfnCallback2W(&cci);
-
-    // Save continue execution flag
-    m_bContinueExecution = cci.bContinueExecution;
-  }
-  else if (m_pfnCallback2A != NULL) {
-    // Call the multi-byte version of the callback function.
-
-    // Prepare callback info structure
-    CR_CRASH_CALLBACK_INFOA cci;
-    memset(&cci, 0, sizeof(CR_CRASH_CALLBACK_INFOA));
-    cci.cb = sizeof(CR_CRASH_CALLBACK_INFOA);
-    cci.nStage = nStage;
-    cci.pExceptionInfo = pExInfo;
-    cci.pUserParam = m_pCallbackParam;
-    cci.pszErrorReportFolder = m_sErrorReportDirA.c_str();
-    cci.bContinueExecution = m_bContinueExecution;
-
-    // Call the function and get the ret code
-    m_nCallbackRetCode = m_pfnCallback2A(&cci);
+    m_nCallbackRetCode = m_pfnCallback2(&cci);
 
     // Save continue execution flag
     m_bContinueExecution = cci.bContinueExecution;
@@ -1311,8 +1249,7 @@ LONG WINAPI CCrashHandler::SehHandler(PEXCEPTION_POINTERS pExceptionPtrs) {
   // Handle stack overflow in a separate thread.
   // Vojtech: Based on martin.bis...@gmail.com comment in
   //	http://groups.google.com/group/crashrpt/browse_thread/thread/a1dbcc56acb58b27/fbd0151dd8e26daf?lnk=gst&q=stack+overflow#fbd0151dd8e26daf
-  if (pExceptionPtrs != 0 && pExceptionPtrs->ExceptionRecord != 0 &&
-      pExceptionPtrs->ExceptionRecord->ExceptionCode == EXCEPTION_STACK_OVERFLOW) {
+  if (pExceptionPtrs != 0 && pExceptionPtrs->ExceptionRecord != 0 && pExceptionPtrs->ExceptionRecord->ExceptionCode == EXCEPTION_STACK_OVERFLOW) {
     // Special case to handle the stack overflow exception.
     // The dump will be realized from another thread.
     // Create another thread that will do the dump.
@@ -1348,7 +1285,6 @@ LONG WINAPI CCrashHandler::SehHandler(PEXCEPTION_POINTERS pExceptionPtrs) {
     pCrashHandler->CrashLock(FALSE);
   }
 
-  // Unreacheable code
   return EXCEPTION_EXECUTE_HANDLER;
 }
 
@@ -1532,11 +1468,7 @@ void __cdecl CCrashHandler::SecurityHandler(int code, void* x) {
 
 // CRT invalid parameter handler
 #if _MSC_VER >= 1400
-void __cdecl CCrashHandler::InvalidParameterHandler(const wchar_t* expression,
-                                                    const wchar_t* function,
-                                                    const wchar_t* file,
-                                                    unsigned int line,
-                                                    uintptr_t pReserved) {
+void __cdecl CCrashHandler::InvalidParameterHandler(const wchar_t* expression, const wchar_t* function, const wchar_t* file, unsigned int line, uintptr_t pReserved) {
   pReserved;
 
   // Invalid parameter exception
@@ -1611,7 +1543,7 @@ int __cdecl CCrashHandler::NewHandler(size_t) {
     pCrashHandler->CrashLock(FALSE);
   }
 
-  // Unreacheable code
+  // Unreachable code
   return 0;
 }
 #endif  //_MSC_VER>=1300
