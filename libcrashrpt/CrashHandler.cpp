@@ -20,6 +20,7 @@ EXTERNC void* _ReturnAddress(void);
 
 #endif
 
+namespace CrashReport {
 extern HANDLE g_hModuleCrashRpt;
 CCrashHandler* CCrashHandler::m_pProcessCrashHandler = NULL;
 
@@ -1756,3 +1757,4 @@ void CCrashHandler::SigtermHandler(int) {
 DWORD CCrashHandler::GetFlags() {
   return m_dwFlags;
 }
+}  // namespace CrashReport

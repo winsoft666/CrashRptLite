@@ -11,6 +11,7 @@ be found in the Authors.txt file in the root of the source tree.
 #include "stdafx.h"
 #include "SharedMem.h"
 
+namespace CrashReport {
 CSharedMem::CSharedMem() {
   // Set internal variables to their default state
   m_uSize = 0;
@@ -111,3 +112,4 @@ void CSharedMem::DestroyView(LPBYTE pViewPtr) {
     m_aViewStartPtrs.erase(it);
   }
 }
+}  // namespace CrashReport

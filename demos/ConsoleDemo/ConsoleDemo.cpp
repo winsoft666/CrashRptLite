@@ -6,6 +6,8 @@
 #include <strsafe.h>
 #include "CrashRpt.h"
 
+using namespace CrashReport;
+
 int main(int argc, char* argv[]) {
   UNREFERENCED_PARAMETER(argc);
   UNREFERENCED_PARAMETER(argv);

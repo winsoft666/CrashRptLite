@@ -20,6 +20,7 @@ be found in the Authors.txt file in the root of the source tree.
 #include "Prefastdef.h"
 
 // wrapper for whatever critical section we have
+namespace CrashReport {
 class CCritSec {
   // make copy constructor and assignment operator inaccessible
 
@@ -50,9 +51,10 @@ class CAutoLock {
   CCritSec* m_pLock;
 
  public:
-   CAutoLock(__in CCritSec* plock);
+  CAutoLock(__in CCritSec* plock);
 
-   ~CAutoLock();
+  ~CAutoLock();
 };
+}  // namespace CrashReport
 
 #endif  //_CRITSEC_H

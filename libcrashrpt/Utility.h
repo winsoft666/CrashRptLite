@@ -4,6 +4,7 @@
 #include <atlstr.h>
 #include <vector>
 
+namespace CrashReport {
 namespace Utility {
 // Returns base name of the EXE file that launched current process.
 CString getAppName();
@@ -93,5 +94,5 @@ std::vector<CString> ExplodeStr(LPCTSTR szString, LPCTSTR szSeparators);
 // Returns file size
 long GetFileSize(const TCHAR* fileName);
 };  // namespace Utility
-
+}  // namespace CrashReport
 #endif  // _UTILITY_H_

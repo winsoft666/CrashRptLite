@@ -4,6 +4,8 @@
 #include "Utility.h"
 #include "strconv.h"
 
+namespace CrashReport {
+
 HANDLE g_hModuleCrashRpt = NULL;       // Handle to CrashRpt.dll module.
 CComAutoCriticalSection g_cs;          // Critical section for thread-safe accessing error messages.
 std::map<DWORD, CString> g_sErrorMsg;  // Last error messages for each calling thread.
@@ -573,5 +575,6 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD dwReason, LPVOID /*lpReserved*/) {
   }
 
   return TRUE;
+}
 }
 #endif

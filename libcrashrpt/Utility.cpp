@@ -3,6 +3,7 @@
 #include <ShlObj.h>
 #include <time.h>
 
+namespace CrashReport {
 CString Utility::getAppName() {
   TCHAR szFileName[_MAX_PATH];
   GetModuleFileName(NULL, szFileName, _MAX_FNAME);
@@ -138,8 +139,7 @@ int Utility::GenerateGUID(CString& sGUID) {
 int Utility::GetOSFriendlyName(CString& sOSName) {
   sOSName.Empty();
   CRegKey regKey;
-  LONG lResult = regKey.Open(HKEY_LOCAL_MACHINE,
-                             _T("SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion"), KEY_READ);
+  LONG lResult = regKey.Open(HKEY_LOCAL_MACHINE, _T("SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion"), KEY_READ);
   if (lResult == ERROR_SUCCESS) {
     TCHAR buf[1024];
     ULONG buf_size = 0;
@@ -190,8 +190,7 @@ BOOL Utility::IsOS64Bit() {
 
   HMODULE hKernel32 = LoadLibrary(_T("kernel32.dll"));
   if (hKernel32 != NULL) {
-    PFNISWOW64PROCESS pfnIsWow64Process =
-        (PFNISWOW64PROCESS)GetProcAddress(hKernel32, "IsWow64Process");
+    PFNISWOW64PROCESS pfnIsWow64Process = (PFNISWOW64PROCESS)GetProcAddress(hKernel32, "IsWow64Process");
     if (pfnIsWow64Process == NULL) {
       // If there is no IsWow64Process() API, than Windows is 32-bit for sure
       FreeLibrary(hKernel32);
@@ -325,8 +324,7 @@ void Utility::SetLayoutRTL(HWND hWnd) {
 
 CString Utility::FormatErrorMsg(DWORD dwErrorCode) {
   LPTSTR msg = 0;
-  FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER, NULL, dwErrorCode,
-                MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&msg, 0, NULL);
+  FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER, NULL, dwErrorCode, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&msg, 0, NULL);
   CString str = msg;
   str.Replace(_T("\r\n"), _T(""));
   GlobalFree(msg);
@@ -526,3 +524,4 @@ BOOL Utility::IsFileSearchPattern(CString sFileName) {
     bSearchPattern = true;
   return bSearchPattern;
 }
+}  // namespace CrashReport
