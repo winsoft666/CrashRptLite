@@ -29,13 +29,13 @@ class CCritSec {
   CRITICAL_SECTION m_CritSec;
 
  public:
-  CCritSec() { InitializeCriticalSection(&m_CritSec); };
+  CCritSec();
 
-  ~CCritSec() { DeleteCriticalSection(&m_CritSec); }
+  ~CCritSec();
 
-  void Lock() { EnterCriticalSection(&m_CritSec); };
+  void Lock();
 
-  void Unlock() { LeaveCriticalSection(&m_CritSec); };
+  void Unlock();
 };
 
 // locks a critical section, and unlocks it automatically
@@ -50,12 +50,9 @@ class CAutoLock {
   CCritSec* m_pLock;
 
  public:
-  CAutoLock(__in CCritSec* plock) {
-    m_pLock = plock;
-    m_pLock->Lock();
-  };
+   CAutoLock(__in CCritSec* plock);
 
-  ~CAutoLock() { m_pLock->Unlock(); };
+   ~CAutoLock();
 };
 
 #endif  //_CRITSEC_H
