@@ -29,7 +29,7 @@ int main(int argc, char* argv[]) {
   StringCchPrintfW(szCrashReportDebugPath, MAX_PATH, L"%s\\%s", szCurDir, L"CrashReportd.exe");
   info.pszCrashReportPath = szCrashReportDebugPath;
 #endif
-  info.dwFlags = CR_INST_ALL_POSSIBLE_HANDLERS | CR_INST_STORE_ZIP_ARCHIVES;
+  info.dwFlags = CR_INST_ALL_POSSIBLE_HANDLERS | CR_INST_STORE_ZIP_ARCHIVES | CR_INST_APP_RESTART;
 
   // Install crash handlers
   int nInstResult = crInstall(&info);

@@ -11,13 +11,13 @@ endif(CRASHRPT_BUILD_STATIC_LIBS)
 # Enable usage of precompiled header
 set(srcs_using_precomp ${source_files})
 list(REMOVE_ITEM srcs_using_precomp ./StdAfx.cpp ./libcrashrpt.def)
-add_msvc_precompiled_header(stdafx.h ./StdAfx.cpp srcs_using_precomp)
+fix_add_msvc_precompiled_header(stdafx.h ./StdAfx.cpp srcs_using_precomp)
 
 # Define _UNICODE (use wide-char encoding)
 add_definitions(-D_UNICODE -D_CRT_SECURE_NO_DEPRECATE)
 
 # Modify default compiler settings
-fix_default_compiler_settings_()
+fix_default_compiler_settings()
 
 # Add include dir
 include_directories(./include)

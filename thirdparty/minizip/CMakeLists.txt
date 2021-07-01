@@ -9,7 +9,7 @@ add_definitions(-D_UNICODE -D_CRT_SECURE_NO_DEPRECATE /wd4127 /wd4131 /wd4100 /w
 # Add include dir
 include_directories( ${CMAKE_SOURCE_DIR}/thirdparty/zlib )
 
-fix_default_compiler_settings_()
+fix_default_compiler_settings()
 
 # Add library build target
 add_library(minizip STATIC ${source_files})

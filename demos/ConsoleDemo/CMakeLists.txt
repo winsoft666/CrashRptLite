@@ -8,7 +8,7 @@ file( GLOB header_files *.h )
 # Define _UNICODE (use wide-char encoding)
 add_definitions(-D_UNICODE )
 
-fix_default_compiler_settings_()
+fix_default_compiler_settings()
 
 # Add include dir
 include_directories(${CMAKE_SOURCE_DIR}/include 
