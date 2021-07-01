@@ -1295,12 +1295,16 @@ BOOL CrashReporter::RestartApp() {
   // Format command line
   CString sCmdLine;
   if (m_CrashInfo.m_sRestartCmdLine.IsEmpty()) {
-    // Format with double quotes to avoid first empty parameter
-    sCmdLine.Format(_T("\"%s\""), m_CrashInfo.GetReport(m_nCurReport)->GetImageName());
+    if (m_sZipName.IsEmpty())
+      sCmdLine.Format(_T("\"%s\""), m_CrashInfo.GetReport(m_nCurReport)->GetImageName());
+    else
+      sCmdLine.Format(_T("\"%s\" -reportzip:\"%s\""), m_CrashInfo.GetReport(m_nCurReport)->GetImageName(), m_sZipName.GetBuffer(0));
   }
   else {
-    // Format with double quotes to avoid first empty parameters
-    sCmdLine.Format(_T("\"%s\" %s"), m_CrashInfo.GetReport(m_nCurReport)->GetImageName(), m_CrashInfo.m_sRestartCmdLine.GetBuffer(0));
+    if (m_sZipName.IsEmpty())
+      sCmdLine.Format(_T("\"%s\" %s"), m_CrashInfo.GetReport(m_nCurReport)->GetImageName(), m_CrashInfo.m_sRestartCmdLine.GetBuffer(0));
+    else
+      sCmdLine.Format(_T("\"%s\" %s -reportzip:\"%s\""), m_CrashInfo.GetReport(m_nCurReport)->GetImageName(), m_CrashInfo.m_sRestartCmdLine.GetBuffer(0), m_sZipName.GetBuffer(0));
   }
 
   // Create process using the command line prepared earlier
