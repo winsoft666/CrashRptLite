@@ -174,6 +174,9 @@ class CCrashHandler {
   // Launches the CrashSender.exe process.
   int LaunchCrashReport(LPCTSTR szCmdLineParams, BOOL bWait, __out_opt HANDLE* phProcess);
 
+  // Record crash event to registry.
+  int RecordCrashEvent(PCR_EXCEPTION_INFO pExceptionInfo);
+
   // Returns TRUE if CrashSender.exe process is still alive.
   BOOL IsSenderProcessAlive();
 

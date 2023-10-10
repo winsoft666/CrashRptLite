@@ -901,6 +901,11 @@ int CCrashHandler::GenerateErrorReport(PCR_EXCEPTION_INFO pExceptionInfo) {
     // Force disable app restart.
     m_pCrashDesc->m_dwInstallFlags &= ~CR_INST_APP_RESTART;
   }
+  else {
+      if (RecordCrashEvent(pExceptionInfo) != 0) {
+          crSetErrorMsg(L"Error record crash event.");
+      }
+  }
 
   // Set "client app crashed" flag.
   m_pCrashDesc->m_bClientAppCrashed = TRUE;
@@ -1150,6 +1155,50 @@ int CCrashHandler::LaunchCrashReport(LPCTSTR szCmdLineParams, BOOL bWait, HANDLE
 
   // Done
   crSetErrorMsg(L"Success.");
+  return 0;
+}
+
+int CCrashHandler::RecordCrashEvent(PCR_EXCEPTION_INFO pExceptionInfo) {
+    if (!pExceptionInfo) {
+        return 1;
+    }
+
+  HKEY hKey = NULL;
+  DWORD dwDisposition = 0;
+
+  CString strSubKey = CString(L"CrashReport\\Record\\") + m_sAppName + L"\\";
+  if (RegCreateKeyExW(HKEY_CURRENT_USER, strSubKey, 0, NULL, 0, KEY_ALL_ACCESS, NULL, &hKey, &dwDisposition) != S_OK) {
+      return 1;
+  }
+
+  union {
+      int64_t ns100;
+      FILETIME ft;
+  } fileTime;
+  GetSystemTimeAsFileTime(&fileTime.ft);
+
+  // 116444736000000000 is the number of total 100 nanoseconds that from 1601/1/1 00:00:00:000 to 1970/1/1 00:00:00:000
+  int64_t lNowMS = (long long)((fileTime.ns100 - 116444736000000000LL) / 10000LL);
+
+  WCHAR szTS[100] = { 0 };
+  _i64tow_s(lNowMS, szTS, 100, 10);
+
+  WCHAR szData[1024] = { 0 };
+  StringCchPrintfW(szData, 1024, L"version=%s;exc_type=%d;code=%d;fpe_subcode=%d;expression=%s", 
+      m_sAppVersion.GetBuffer(), 
+      pExceptionInfo->exctype,
+      pExceptionInfo->code,
+      pExceptionInfo->fpe_subcode,
+      pExceptionInfo->expression ? pExceptionInfo->expression : L""
+  );
+  m_sAppVersion.ReleaseBuffer();
+
+  if (RegSetValueExW(hKey, szTS, 0, REG_SZ, (const BYTE*)szData, wcslen(szData) * sizeof(WCHAR)) != S_OK) {
+      RegCloseKey(hKey);
+      return 1;
+  }
+
+  RegCloseKey(hKey);
   return 0;
 }
 

@@ -654,6 +654,7 @@ CRASHRPTAPI(int) crAddRegKey(LPCWSTR pszRegKey, LPCWSTR pszDstFileName, DWORD dw
   *    ei.exctype = CR_SEH_EXCEPTION;
   *    ei.code = 1234;
   *    ei.pexcptrs = NULL;
+  *    ei.bManual = TRUE;
   *
   *    int result = crGenerateErrorReport(&ei);
   *
