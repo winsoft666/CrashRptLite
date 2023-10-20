@@ -20,6 +20,8 @@ be found in the Authors.txt file in the root of the source tree.
 #include "MFCDemoView.h"
 #include "CrashRpt.h"
 
+using namespace CrashReport;
+
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif

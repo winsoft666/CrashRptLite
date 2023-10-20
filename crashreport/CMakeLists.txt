@@ -1,5 +1,5 @@
 cmake_minimum_required (VERSION 3.16)
-project(crashreport)
+project(CrashRptLite)
 
 # Create the list of source files
 aux_source_directory( . source_files )
@@ -28,21 +28,21 @@ include_directories( ${CMAKE_SOURCE_DIR}/libcrashrpt/include
                             ${CMAKE_SOURCE_DIR}/thirdparty/tinyxml)
 
 
-add_executable(crashreport WIN32 ${source_files} ${header_files})
+add_executable(CrashRptLite WIN32 ${source_files} ${header_files})
 
 # Add input link libraries
-target_link_libraries(crashreport zlib minizip libjpeg libpng tinyxml Rpcrt4.lib Gdi32.lib shell32.lib version.lib psapi.lib)
+target_link_libraries(CrashRptLite zlib minizip libjpeg libpng tinyxml Rpcrt4.lib Gdi32.lib shell32.lib version.lib psapi.lib)
 
 # Add compiler flags (/MP for multi-processor compilation, /Os to favor small code)
-set_target_properties(crashreport PROPERTIES COMPILE_FLAGS "/Os")
+set_target_properties(CrashRptLite PROPERTIES COMPILE_FLAGS "/Os")
 #if(${MSVC_VERSION} GREATER 1310)
-#	set_target_properties(crashreport PROPERTIES COMPILE_FLAGS "/MP")
+#	set_target_properties(CrashRptLite PROPERTIES COMPILE_FLAGS "/MP")
 #endif(${MSVC_VERSION} GREATER 1310)
 
-set_target_properties(crashreport PROPERTIES 
+set_target_properties(CrashRptLite PROPERTIES 
 				DEBUG_POSTFIX d)
         
-set_property(TARGET crashreport PROPERTY VS_DPI_AWARE "PerMonitor")
+set_property(TARGET CrashRptLite PROPERTY VS_DPI_AWARE "PerMonitor")
 
-install(TARGETS crashreport
+install(TARGETS CrashRptLite
 	RUNTIME DESTINATION tools)

@@ -11,14 +11,14 @@ list(REMOVE_ITEM srcs_using_precomp ./stdafx.cpp)
 fix_add_msvc_precompiled_header(stdafx.h ./stdafx.cpp srcs_using_precomp)
 
 # Use MFC
-if (CRASHRPT_LINK_CRT_AS_DLL)     					
+if (NOT CRASHREPORT_USE_STATIC_CRT)     					
 	# Use MFC as a shared lib
-  ADD_DEFINITIONS(-D_AFXDLL)
+    ADD_DEFINITIONS(-D_AFXDLL)
 	SET(CMAKE_MFC_FLAG 2) 
-else(CRASHRPT_LINK_CRT_AS_DLL)   
+else()   
 	# Use MFC as a static lib
 	SET(CMAKE_MFC_FLAG 1) 
-endif(CRASHRPT_LINK_CRT_AS_DLL)   
+endif()   
 
 # Include resource file
 list(APPEND source_files ./MFCDemo.rc )
@@ -35,7 +35,7 @@ include_directories(${CMAKE_SOURCE_DIR}/libcrashrpt/include)
 add_executable(MFCDemo WIN32 ${source_files} ${header_files})
 
 # Add input link libraries
-target_link_libraries(MFCDemo libcrashrpt)
+target_link_libraries(MFCDemo libCrashRptLite)
 
 # Add "d" postfix to output file name in Debug
 set_target_properties(MFCDemo PROPERTIES DEBUG_POSTFIX d )

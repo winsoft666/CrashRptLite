@@ -18,7 +18,7 @@ include_directories(${CMAKE_SOURCE_DIR}/include
 add_executable(ConsoleDemo ${source_files} ${header_files})
 
 # Add input link libraries
-target_link_libraries(ConsoleDemo libcrashrpt)
+target_link_libraries(ConsoleDemo libCrashRptLite)
 
 set_target_properties(ConsoleDemo PROPERTIES DEBUG_POSTFIX d )
 
