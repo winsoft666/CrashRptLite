@@ -17,7 +17,7 @@ list(APPEND source_files
 list(APPEND source_files ./Resource.rc)
 
 # Define _UNICODE (use wide-char encoding)
-add_definitions(-D_UNICODE )
+add_definitions(-DUNICODE -D_UNICODE)
 
 fix_default_compiler_settings()
 

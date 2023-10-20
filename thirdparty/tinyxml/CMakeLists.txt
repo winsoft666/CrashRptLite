@@ -4,7 +4,7 @@ project(tinyxml)
 aux_source_directory( . source_files )
 
 # Define _UNICODE (use wide-char encoding)
-add_definitions(-D_UNICODE)
+add_definitions(-DUNICODE -D_UNICODE)
 
 fix_default_compiler_settings()
 
